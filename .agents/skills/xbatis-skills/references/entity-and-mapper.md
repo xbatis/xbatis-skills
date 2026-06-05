@@ -31,6 +31,22 @@
 - `cn.xbatis.listener.annotations.OnInsert`
 - `cn.xbatis.listener.annotations.OnUpdate`
 
+## 枚举约定
+
+持久化枚举必须实现真实接口 `cn.xbatis.core.mybatis.typeHandler.EnumSupport<T>`：
+
+```java
+public enum Status implements EnumSupport<Integer> {
+}
+```
+
+规则：
+
+- 枚举通过 `getCode()` 返回数据库存储值
+- `T` 按数据库字段实际类型选择，例如 `String`、`Integer`、`Long`
+- 不要默认依赖 `ordinal()`、`name()` 或手写 TypeHandler
+- 需要返回枚举名称或展示值时，优先配合 `@PutEnumValue`
+
 ## 默认 Mapper 模式
 
 默认推荐每个实体一个 Mapper：
@@ -84,6 +100,21 @@ QueryChain.of(mybatisBasicMapper, SysUser.class)
 - 复杂 XML 调用通过 `withSqlSession(...)`
 - 如果代码库已经采用单 Mapper，就继续沿用，不要混入大量实体 Mapper
 
+## DAO 注入约定
+
+如果项目使用 DAO 层，先创建项目级 BaseDao：
+
+- 单 Mapper 模式：项目 BaseDao 继承 `BasicDaoImpl<T, ID>`
+- 多 Mapper 模式：项目 BaseDao 继承 `DaoImpl<T, ID>`
+- 项目 BaseDao 的 `setMapper(...)` 方法必须加当前容器框架的自动注入注解
+- `setMapper(...)` 内部调用父类 `setMapper(mapper)` 完成绑定
+- BaseDao 子类只继承项目 BaseDao，不需要也不应重复重写 `setMapper(...)`
+
+容器注解跟随当前项目：
+
+- Spring 项目跟随 `@Autowired`、`@Resource` 等既有规范
+- Solon 项目跟随 `@Inject`、`@Db` 等既有规范
+
 ## 写入冲突策略
 
 README 说明 `save` / `saveBatch` / `InsertChain` 支持 `onConflict`：
@@ -98,3 +129,4 @@ README 说明 `save` / `saveBatch` / `InsertChain` 支持 `onConflict`：
 - 除非仓库已经统一使用 `BasicMapper`，否则默认生成 `MybatisMapper<T>`
 - 实体字段优先用注解表达映射规则，不要把映射逻辑分散到业务层
 - 默认使用 Lambda 属性引用，不写硬编码列名
+- 不知道类路径、真实类名、方法名、注解包名或泛型签名时，先用本地 xbatis 源码确认，不要猜测

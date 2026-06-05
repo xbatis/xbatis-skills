@@ -16,6 +16,7 @@
 3. 不要在同一模块里同时生成 Spring Boot 和 Solon 两套接入代码
 4. 版本号优先以当前本地 xbatis 源码 README 或官网对应章节为准，不要凭空硬编码旧版本
 5. 先把容器、数据源、Mapper 扫描接起来，再生成实体、Mapper、DAO、Service
+6. 开发环境必须开启 xbatis POJO 安全检查；测试和生产环境不要求默认开启；不知道真实注解包名或配置项时，先查当前 starter 依赖和本地源码
 
 ## 版本选择
 
@@ -104,6 +105,33 @@ public class XbatisApplication {
 - `@MapperScan` 优先扫描实体 Mapper 包
 - 不要为多 Mapper 项目强行切成单 Mapper 风格
 
+### POJO 安全检查
+
+开发环境必须开启 xbatis POJO 安全检查，用于启动时检查 VO、Model、条件对象、排序对象的映射和注解缺口。
+
+Spring / Spring Boot 项目优先使用当前 starter 支持的 `@XbatisPojoCheckScan`：
+
+```java
+@Profile("dev")
+@Configuration
+@XbatisPojoCheckScan(
+        basePackages = "com.example",
+        modelPackages = "com.example.model",
+        resultEntityPackages = "com.example.vo",
+        conditionTargetPackages = "com.example.qo",
+        orderByTargetPackages = "com.example.qo"
+)
+public class XbatisSafeCheckConfig {
+}
+```
+
+注意：
+
+- README 记录的注解包名是 `org.mybatis.spring.boot.autoconfigure.XbatisPojoCheckScan`
+- 当前 xbatis core 源码里没有该类型；生成 import 前必须从当前项目依赖或本地 starter 源码确认真实包名
+- 新项目默认只生成 dev profile 下的安全检查配置；测试和生产环境不要求默认开启
+- 扫描范围必须覆盖 VO、Model、QO、排序对象所在包，不要只扫描实体包
+
 ## Solon 接入
 
 ### Maven 依赖
@@ -143,6 +171,12 @@ ds:
   password: 123456
 
 mybatis.master:
+  pojoCheck:
+    basePackages: com.example
+    modelPackages: com.example.model
+    resultEntityPackages: com.example.vo
+    conditionTargetPackages: com.example.qo
+    orderByTargetPackages: com.example.qo
   mappers:
     - "com.example.mapper"
     - "classpath:mapper/**/*.xml"
@@ -152,6 +186,9 @@ mybatis.master:
 
 - `mybatis.<数据源 bean 名称>` 要和数据源 Bean 名称对应
 - `mappers` 可放包路径，也可放 XML 路径
+- 开发环境必须配置 `pojoCheck`；多数据源项目要在 dev 配置中对应 `mybatis.<beanName>` 下配置
+- 测试和生产环境不要求默认配置 `pojoCheck`；除非项目明确要求，不要在 test/prod 配置里生成
+- `pojoCheck` 路径可按项目约定使用逗号分隔的多个包路径
 
 ### DataSource Bean
 
@@ -185,7 +222,8 @@ Solon 中如果项目已把 Mapper 托管到容器：
 2. 生成或对齐 xbatis 依赖
 3. 生成或对齐 JDBC 驱动 / 数据源配置
 4. 生成启动类、容器配置类、`@MapperScan` 或 Solon Bean
-5. 再生成 Mapper、BaseDao、业务 DAO、实体、QO、VO、Model
+5. 生成 dev 环境的 xbatis POJO 安全检查配置
+6. 再生成 Mapper、BaseDao、业务 DAO、实体、QO、VO、Model
 
 ## 环境接入后的生成检查
 
@@ -197,7 +235,8 @@ Solon 中如果项目已把 Mapper 托管到容器：
 4. 数据源配置是否和容器风格一致
 5. `@MapperScan` 是否和单 Mapper / 多 Mapper 模式一致
 6. 是否没有同时混入另一套容器代码
-7. 业务 DAO 注入是否已经按当前容器使用自动注入注解
+7. 项目 BaseDao 的 `setMapper(...)` 是否已经按当前容器使用自动注入注解，业务 DAO 子类是否不重复重写
+8. dev 环境是否已经开启 xbatis POJO 安全检查，并覆盖 VO、Model、QO、排序对象所在包；test/prod 是否避免默认开启
 
 ## 不推荐行为
 
@@ -206,3 +245,5 @@ Solon 中如果项目已把 Mapper 托管到容器：
 3. 在 Solon 项目里生成 Spring Boot 启动类
 4. 不核对版本线就硬编码旧版 `xbatis.version`
 5. 单 Mapper / 多 Mapper 还没判断，就先生成 `@MapperScan`
+6. 生成 xbatis 项目骨架却漏掉 dev 的 POJO 安全检查配置
+7. 在项目未要求时，为 test/prod 默认开启 POJO 安全检查

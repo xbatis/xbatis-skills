@@ -57,17 +57,20 @@
 - 实体普通字段没有机械补 `@TableField("列名")`
 - 创建时间字段优先使用 `@TableField(defaultValue = "{NOW}", update = false)`
 - 修改时间字段优先使用 `@TableField(updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
+- 持久化枚举实现 `cn.xbatis.core.mybatis.typeHandler.EnumSupport<T>`，并提供稳定的 `getCode()`
 - 项目启用了 Lombok，实体或条件对象优先使用 `@FieldNameConstants`
 - 条件对象优先使用 `@ConditionTarget` 体系，并在 `where()` 中使用 `WhereUtil.where(this)`
-- 业务 DAO 优先通过重写 `setMapper(mapper)` 注入 Mapper，并补 Spring、Solon 等容器自动注入注解
+- 项目 BaseDao 的 `setMapper(...)` 带 Spring、Solon 等容器自动注入注解，业务 DAO 子类不重复重写 `setMapper(...)`
 - VO、QO、Model 中非数据库操作字段使用 `@Ignore` 或 `@Ignores`
 - 实体类保持单一性，不混入非数据库表字段
 - 复杂表达先尝试 SQL 模板，再考虑 XML
 - Mapper 组织方式与项目当前的单 Mapper / 多 Mapper 模式一致
+- 不知道类路径、真实类名、方法名、注解包名或泛型签名时，先基于本地 xbatis 源码确认，没有凭空猜测
 
 ### 风险信号
 
 - 不知道 xbatis 如何使用时，没有从本地 xbatis 源码目录分析使用方法
+- 不知道类路径、真实类名、方法名、注解包名或泛型签名时，直接凭经验生成代码
 - 简单 CRUD 却写了大量 XML
 - 普通列表页在 Service 层拼 SQL
 - 有 DAO 层却把事务主要开在 Service 层
@@ -85,7 +88,9 @@
 - 普通字段明明不需要特殊语义，却机械补满 `@TableField("列名")`
 - 创建时间、修改时间没有复用 `@TableField` 的动态默认值能力
 - 项目已适合对象转条件，却没用 `@ConditionTarget` 体系，或 `where()` 没有优先使用 `WhereUtil.where(this)`
-- DAO 注入仍然以构造方法传 Mapper 为主，偏离项目要求的 `setMapper(mapper)` 注入方式
+- DAO 注入仍然以构造方法传 Mapper 为主，或每个业务 DAO 子类重复重写 `setMapper(...)`
+- 项目 BaseDao 的 `setMapper(...)` 缺少当前容器框架的自动注入注解
+- 持久化枚举没有实现 `EnumSupport<T>`，或错误依赖 `ordinal()` / `name()` 作为存储值
 - xbatis 注解里继续写字符串字段名，本可使用 `SysUser.Fields.id`
 - VO、QO、Model 中存在非数据库操作字段，却没有用 `@Ignore` 或 `@Ignores`
 - 实体类混入非数据库表字段
@@ -134,8 +139,8 @@
 - 修改操作是否使用 Model 类作为传参载体
 - Model 是否允许直接参与 `save`、`update`
 - update 字段范围是否只覆盖本次业务允许变化的字段
-- DAO 是否优先通过重写 `setMapper(mapper)` 注入 Mapper
-- DAO 是否补了 Spring、Solon 等容器自动注入注解
+- 项目 BaseDao 是否通过带容器自动注入注解的 `setMapper(...)` 注入 Mapper
+- 业务 DAO 子类是否避免重复定义 Mapper 字段、构造器注入或 `setMapper(...)`
 - Model 中非数据库操作字段是否使用 `@Ignore` 或 `@Ignores`
 - 单条数据先查后改的场景是否优先使用 `partialUpdate(...)`
 - `UpdateChain`、`InsertChain`、`DeleteChain` 是否最终调用 `execute()`
@@ -147,7 +152,7 @@
 - 多 Mapper 模式下绕过 DAO 直接依赖具体 Mapper
 - 把查询实体、响应 VO 或全量实体直接作为修改入参
 - 因为前端传了字段就默认全部参与 update
-- 项目已有统一注入规范，却继续使用构造方法传 Mapper
+- 项目已有统一 BaseDao 注入规范，却继续使用构造方法传 Mapper，或每个业务 DAO 子类重复重写 `setMapper(...)`
 - 把不参与数据库操作的 Model 字段直接带进 save / update 语义
 - 单条数据先查后改时，本可精准修改，却直接对查出的实体走普通 `update(entity)`
 - 创建了写入 Chain，却漏掉最终的 `execute()`
@@ -414,10 +419,12 @@
 19. 多租户、逻辑删除、乐观锁、动态值走框架能力
 20. 单 Mapper 模式优先统一 `XbatisMapper extends BasicMapper` 并配置 `@MapperScan`
 21. 有 DAO 层时，事务强烈推荐在 DAO 方法上开启
-22. 业务 DAO 优先通过重写 `setMapper(mapper)` 配合 Spring、Solon 等容器自动注入注解完成装配
+22. DAO 注入收敛在项目 BaseDao 的 `setMapper(...)`，并配合 Spring、Solon 等容器自动注入注解完成装配；业务 DAO 子类不重复重写
 23. 实体类只承载数据库表字段，保持单一性
 24. 实体类注解只能写在实体类上
-25. XML / 原生 SQL 只在必要时出现
-26. 与项目已有 xbatis 风格一致
+25. 持久化枚举实现 `EnumSupport<T>` 并通过 `getCode()` 提供数据库存储值
+26. 不知道类路径或类名时，先查本地 xbatis 源码，不凭空猜测
+27. XML / 原生 SQL 只在必要时出现
+28. 与项目已有 xbatis 风格一致
 
 如果一段代码反复违背这些条件，优先判定它偏离了 xbatis 习惯，而不是继续在现有写法上做局部修补。

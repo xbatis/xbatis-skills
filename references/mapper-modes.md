@@ -42,16 +42,17 @@
 
 - BaseDao 根据当前环境选择注入方式
 - Spring 项目优先按项目现有规范注入
-- Solon 项目按项目既有习惯使用构造方法或 setter 注入
-- BaseDao 内部负责封装通用能力；具体业务 DAO 注入 Mapper 时，优先重写 `setMapper(mapper)` 完成注入
-- 业务 DAO 需要补 Spring、Solon 等容器框架的自动注入注解，并延续项目现有装配方式
-- 业务 DAO 继承项目 BaseDao，不要在每个 DAO 里重复写框架注入细节
+- Solon 项目按项目既有习惯使用 `@Inject`、`@Db` 或 setter 注入
+- 项目 BaseDao 内部负责封装通用能力，并在 `setMapper(...)` 方法上添加当前容器框架的自动注入注解
+- BaseDao 的 `setMapper(...)` 内部调用父类 `setMapper(mapper)` 完成 Mapper 绑定
+- 业务 DAO 子类只继承项目 BaseDao，不需要也不应重写 `setMapper(...)`
+- 不要在每个业务 DAO 里重复写 Mapper 字段、构造器注入或容器注入细节
 - 有 DAO 层时，事务边界强烈推荐定义在 DAO 方法上
 
 BaseDao 示例方向：
 
-- 单 Mapper：先定义统一 `XbatisMapper extends BasicMapper`，再让 `XbatisBaseDao<T, ID> extends BasicDaoImpl<T, ID>` 复用统一 Mapper 能力；业务 DAO 优先通过重写 `setMapper(mapper)` 注入
-- 多 Mapper：`XbatisBaseDao<T, ID> extends DaoImpl<T, ID>`，业务 DAO 注入对应实体 Mapper 后，优先通过重写 `setMapper(mapper)` 传给父类
+- 单 Mapper：先定义统一 `XbatisMapper extends BasicMapper`，再让 `BaseDao<T, ID> extends BasicDaoImpl<T, ID>`；`BaseDao#setMapper(XbatisMapper mapper)` 上加容器自动注入注解，子类不重写
+- 多 Mapper：`BaseDao<T, ID> extends DaoImpl<T, ID>`；`BaseDao#setMapper(...)` 上加容器自动注入注解，子类不重写。具体参数类型和泛型能否由容器正确解析，必须根据当前项目和本地 xbatis 源码确认，不得猜测
 
 DAO 内部优先使用框架已提供的 Chain 创建方法：
 
@@ -101,7 +102,7 @@ QueryChain：
 
 DAO：
 
-- `public class UserDao extends XbatisBaseDao<User, Long> {}`
+- `public class UserDao extends BaseDao<User, Long> {}`
 
 UpdateChain / InsertChain / DeleteChain：
 
@@ -116,7 +117,7 @@ UpdateChain / InsertChain / DeleteChain：
 3. 不要无故引入 `BasicMapper`
 4. 不要为了少一个接口，把项目改成单 Mapper 风格
 5. Service 层优先调用 DAO 方法，不直接持有具体实体 Mapper
-6. 业务 DAO 注入具体 Mapper 时，优先重写 `setMapper(mapper)` 并补 Spring、Solon 等容器自动注入注解
+6. Mapper 注入收敛到项目 BaseDao 的 `setMapper(...)`，并补 Spring、Solon 等容器自动注入注解；业务 DAO 子类不重写 `setMapper(...)`
 
 ## 单 Mapper 模式
 
@@ -155,7 +156,7 @@ QueryChain：
 
 DAO：
 
-- `public class UserDao extends XbatisBaseDao<User, Long> {}`
+- `public class UserDao extends BaseDao<User, Long> {}`
 
 UpdateChain / InsertChain / DeleteChain：
 
@@ -175,7 +176,7 @@ XML：
 3. DAO 层使用项目 BaseDao，BaseDao 基于 `BasicDaoImpl<T, ID>`
 4. 自定义 SQL、withSqlSession、代码生成都要围绕统一 Mapper 设计
 5. Service 层优先调用 DAO 方法，不直接持有 `BasicMapper`
-6. 业务 DAO 如果需要注入统一 Mapper，也优先通过重写 `setMapper(mapper)` 配合 Spring、Solon 等容器自动注入注解完成
+6. 统一 Mapper 注入收敛到项目 BaseDao 的 `setMapper(...)`，并配合 Spring、Solon 等容器自动注入注解完成；业务 DAO 子类不重写
 
 ## 判断规则
 
@@ -218,7 +219,7 @@ XML：
 5. 自定义 SQL 的 namespace 和调用方式是否与当前模式一致
 6. DAO / Repository 是否错误混入了另一种模式
 7. `QueryChain` / `UpdateChain` / `InsertChain` / `DeleteChain` 是否优先在 DAO 内通过框架方法创建
-8. 业务 DAO 是否优先通过重写 `setMapper(mapper)` 注入 Mapper，并补 Spring、Solon 等容器自动注入注解
+8. 项目 BaseDao 的 `setMapper(...)` 是否带 Spring、Solon 等容器自动注入注解，业务 DAO 子类是否避免重复重写
 
 高风险问题：
 
@@ -230,8 +231,8 @@ XML：
 6. 有 DAO 层却把事务主要开在 Service 层，导致事务边界和数据库访问分离
 7. 单 Mapper 模式下没有统一 `XbatisMapper` 或 `@MapperScan` 配置与单 Mapper 入口不一致
 8. 多 Mapper 模式下把公共查询硬塞进统一 Mapper，导致职责混乱
-9. 业务 DAO 通过构造方法一路传 Mapper，而项目规范要求重写 `setMapper(mapper)` 注入
-10. 缺少 Spring、Solon 等容器自动注入注解，导致 DAO 无法按统一方式装配
+9. 业务 DAO 通过构造方法一路传 Mapper，或每个子类重复重写 `setMapper(...)`
+10. 项目 BaseDao 的 `setMapper(...)` 缺少 Spring、Solon 等容器自动注入注解，导致 DAO 无法按统一方式装配
 
 ## 不推荐行为
 
@@ -240,4 +241,4 @@ XML：
 3. 因个人偏好随意切换当前项目的 Mapper 模式
 4. 有 DAO 层却绕过 DAO 直接在业务层创建 Chain
 5. 有 DAO 层却把事务主要放到 Service 层
-6. 业务 DAO 明明已有统一注入规范，却继续使用构造方法传 Mapper
+6. 业务 DAO 明明已有统一 BaseDao 注入规范，却继续使用构造方法传 Mapper 或重复重写 `setMapper(...)`
