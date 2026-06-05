@@ -386,9 +386,9 @@ public enum Status implements EnumSupport<Integer> {
 - 删除链在 DAO 内使用 `deleteChain()`
 - `UpdateChain`、`InsertChain`、`DeleteChain` 最终执行方法统一是 `execute()`
 - 修改操作优先使用 Model 类作为传参载体
-- Model 可以像实体类一样直接参与 `save`、`update`
+- Model 可以像实体类一样直接参与 `save(Model)`、`update(Model)`, xbatis 自带这些方法
 - Model 中凡是不是数据库操作字段、需要忽略的字段，优先使用 `@Ignore` 或 `@Ignores`
-- 单条数据如果是“先查询出来，再改部分字段”的场景，优先使用 xbatis 的 `partialUpdate(...)` 精准修改
+- 单条数据如果是“先查询出来，再改部分字段”的场景，强烈建议使用 xbatis 的 `partialUpdate(...)` 精准修改
 - 更新时缩小字段范围，只更新本次业务允许变化的字段
 
 避免：
@@ -648,7 +648,7 @@ public enum Status implements EnumSupport<Integer> {
 18. 无特殊要求时项目必须集成 Lombok，并优先使用 `@FieldNameConstants` 和 `SysUser.Fields.id` 这类字段引用
 19. `.as(...)` 优先使用 getter / 字段引用形式，例如 `.select(SysUser::getId, c -> c.as(SysUser::getId))`；只有特殊情况才使用 `.as("id")`
 20. DAO 注入收敛在项目 BaseDao 的 `setMapper(...)` 上，并补 Spring、Solon 等容器自动注入注解；BaseDao 子类不重复重写 `setMapper(...)`，不默认走构造方法传 Mapper
-21. 单条数据如果是先查后改部分字段，优先使用 `partialUpdate(...)` 精准修改
+21. 单条数据如果是先查后改部分字段，强烈建议使用 `partialUpdate(...)` 精准修改
 22. `UpdateChain`、`InsertChain`、`DeleteChain` 最终统一通过 `execute()` 执行
 23. SQL 模板优先通过 `Methods.tpl`、`Methods.fTpl`、`Methods.cTpl` 创建
 24. 逻辑删除、多租户、乐观锁、动态值优先框架能力
