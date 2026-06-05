@@ -47,6 +47,8 @@
 - BaseDao 的 `setMapper(...)` 内部调用父类 `setMapper(mapper)` 完成 Mapper 绑定
 - 业务 DAO 子类只继承项目 BaseDao，不需要也不应重写 `setMapper(...)`
 - 不要在每个业务 DAO 里重复写 Mapper 字段、构造器注入或容器注入细节
+- 不要在业务 DAO 里编写与 BaseDao、DAO 基础方法或内置 Mapper 方法完全等价的简单转发方法
+- 业务 DAO 只保留有业务语义、组合查询、事务边界或复用价值的方法
 - 有 DAO 层时，事务边界强烈推荐定义在 DAO 方法上
 
 BaseDao 示例方向：
@@ -233,6 +235,7 @@ XML：
 8. 多 Mapper 模式下把公共查询硬塞进统一 Mapper，导致职责混乱
 9. 业务 DAO 通过构造方法一路传 Mapper，或每个子类重复重写 `setMapper(...)`
 10. 项目 BaseDao 的 `setMapper(...)` 缺少 Spring、Solon 等容器自动注入注解，导致 DAO 无法按统一方式装配
+11. 业务 DAO 里堆满 `getById`、`save`、`update`、`deleteById`、`count`、`exists` 这类基础能力的简单转发方法
 
 ## 不推荐行为
 
@@ -242,3 +245,4 @@ XML：
 4. 有 DAO 层却绕过 DAO 直接在业务层创建 Chain
 5. 有 DAO 层却把事务主要放到 Service 层
 6. 业务 DAO 明明已有统一 BaseDao 注入规范，却继续使用构造方法传 Mapper 或重复重写 `setMapper(...)`
+7. 业务 DAO 编写大量和 BaseDao / 内置 Mapper 重复的简单方法

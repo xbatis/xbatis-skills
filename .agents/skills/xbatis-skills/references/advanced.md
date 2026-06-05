@@ -143,7 +143,9 @@ README 中记录了两类能力，但当前仓库源码未直接提供实现：
 
 AI 生成代码时的默认建议：
 
-- 开发环境启用 POJO 安全检查
+- 开发环境必须启用 POJO 安全检查；测试和生产环境不要求默认开启
+- Spring / Spring Boot 优先使用当前 starter 支持的 `@XbatisPojoCheckScan`，生成 import 前先确认真实包名
+- Solon 优先在开发环境配置的 `mybatis.<beanName>.pojoCheck` 下声明扫描包
 - 显式配置 `databaseId`
 - 查询接口优先 `.forSearch(true)`
 - VO 优先 `@ResultEntity` 驱动

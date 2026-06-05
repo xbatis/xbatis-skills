@@ -45,6 +45,7 @@
 - 单 Mapper 项目 BaseDao 继承 `BasicDaoImpl<T, ID>`
 - 多 Mapper 项目 BaseDao 继承 `DaoImpl<T, ID>`
 - 业务 DAO 继承项目 BaseDao
+- 业务 DAO 没有编写与 BaseDao、DAO 基础方法或内置 Mapper 方法等价的简单转发方法
 - 有 DAO 层时，事务强烈推荐定义在 DAO 方法上
 - 按 id 查询实体或单表部分列使用 `getById`
 - 按 id 查询单列值使用 `getValueById`
@@ -80,6 +81,7 @@
 - 单 Mapper 项目 BaseDao 继承了 `DaoImpl`
 - 多 Mapper 项目 BaseDao 继承了 `BasicDaoImpl`
 - 业务 DAO 到处直接继承 `BasicDaoImpl` / `DaoImpl`，没有项目级 BaseDao
+- 业务 DAO 堆满 `getById`、`save`、`update`、`deleteById`、`count`、`exists` 这类基础能力的简单转发方法
 - 按 id 查询实体、部分列或单列值时默认写 `QueryChain`
 - 有 DAO 层却在 Service / Controller 中直接写 `QueryChain.of(...)` 或其他 `Chain.of(...)`
 - 本可用 `@Fetch` 的场景机械使用 join
@@ -257,6 +259,23 @@
 
 ## 5. 框架特性检查
 
+### 开发环境安全检查
+
+检查：
+
+- 开发环境是否开启 xbatis POJO 安全检查
+- 安全检查扫描范围是否覆盖 VO、Model、QO、排序对象所在包
+- Spring / Spring Boot 使用 `@XbatisPojoCheckScan` 时，import 是否已按当前 starter 依赖确认真实包名
+- Solon 是否在开发环境配置的 `mybatis.<数据源 bean 名称>.pojoCheck` 下声明扫描包
+- 测试和生产环境是否避免默认开启安全检查，除非项目明确要求
+
+重点风险：
+
+- 开发环境未开启安全检查，导致 VO、Model、条件对象、排序对象的映射问题延后到运行期暴露
+- 只扫描实体包，漏掉真正需要检查的 VO / Model / QO / OrderBy 包
+- 未确认 starter 真实类型就凭 README 包名直接生成 import
+- 在项目未要求时为 test/prod 默认开启安全检查，增加不必要的启动开销
+
 ### 逻辑删除
 
 检查：
@@ -354,6 +373,7 @@
 - 项目是否统一推荐 Lombok `@FieldNameConstants`
 - xbatis 注解中的字段依赖是否优先使用 `Fields`
 - VO、QO、Model 是否统一使用 `@Ignore` / `@Ignores` 忽略非数据库操作字段
+- 业务 DAO 是否只保留有业务语义、组合查询、事务边界或复用价值的方法
 
 重点风险：
 
@@ -365,6 +385,7 @@
 - 不知道 xbatis 如何使用时，没有从本地 xbatis 源码目录分析使用方法
 - 单 Mapper 模式下没有统一 `XbatisMapper`，或 `@MapperScan` 与单 Mapper 入口不一致
 - 业务 DAO 直接继承框架 DAO 实现，重复散落 Mapper 注入细节
+- 业务 DAO 编写大量与 BaseDao / 内置 Mapper 重复的简单方法，增加维护面但没有提供业务语义
 - 项目已有对象转条件规范，却新写一套手工筛选逻辑
 - 同仓库里混入另一套 ORM 组织习惯
 - 在 VO、DTO、QO、Model 等非实体类上使用实体类注解
@@ -424,7 +445,9 @@
 24. 实体类注解只能写在实体类上
 25. 持久化枚举实现 `EnumSupport<T>` 并通过 `getCode()` 提供数据库存储值
 26. 不知道类路径或类名时，先查本地 xbatis 源码，不凭空猜测
-27. XML / 原生 SQL 只在必要时出现
-28. 与项目已有 xbatis 风格一致
+27. 开发环境开启 xbatis POJO 安全检查，并覆盖 VO、Model、QO、排序对象所在包；测试和生产环境不默认开启
+28. 业务 DAO 不写和 BaseDao / 内置 Mapper 重复的简单方法
+29. XML / 原生 SQL 只在必要时出现
+30. 与项目已有 xbatis 风格一致
 
 如果一段代码反复违背这些条件，优先判定它偏离了 xbatis 习惯，而不是继续在现有写法上做局部修补。

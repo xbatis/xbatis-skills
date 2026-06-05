@@ -109,6 +109,8 @@ QueryChain.of(mybatisBasicMapper, SysUser.class)
 - 项目 BaseDao 的 `setMapper(...)` 方法必须加当前容器框架的自动注入注解
 - `setMapper(...)` 内部调用父类 `setMapper(mapper)` 完成绑定
 - BaseDao 子类只继承项目 BaseDao，不需要也不应重复重写 `setMapper(...)`
+- 业务 DAO 不建议写与 BaseDao / 内置 Mapper 重复的简单方法
+- 业务 DAO 只保留有业务语义、组合查询、事务边界或复用价值的方法
 
 容器注解跟随当前项目：
 
