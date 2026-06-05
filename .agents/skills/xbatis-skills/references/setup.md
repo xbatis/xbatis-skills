@@ -72,7 +72,6 @@ README 约定的依赖顺序：
 
 高频配置点：
 
-- `setSingleMapperClass(...)`：启用单 Mapper 模式
 - `setTableUnderline(...)` / `setColumnUnderline(...)`：下划线策略
 - `setDatabaseCaseRule(...)`：数据库大小写规则
 - `setDynamicValue(...)`：注册动态默认值

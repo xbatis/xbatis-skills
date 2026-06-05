@@ -195,9 +195,8 @@ XML：
 
 - 自定义 `MybatisBasicMapper extends BasicMapper`
 - 自定义 `XbatisMapper extends BasicMapper`
-- `XbatisGlobalConfig.setSingleMapperClass(...)`
 - `@MapperScan(... markerInterface = BasicMapper.class)`
-- DAO 实现类继承 `BasicDaoImpl`
+- DAO BaseDao类继承 `BasicDaoImpl`
 
 如果你看到下面这些特征，就优先按多 Mapper 模式思考：
 

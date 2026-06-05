@@ -83,8 +83,7 @@ public interface MybatisBasicMapper extends BasicMapper {
 使用要求：
 
 1. `@MapperScan(..., markerInterface = BasicMapper.class)`
-2. 启动阶段执行 `XbatisGlobalConfig.setSingleMapperClass(MybatisBasicMapper.class)`
-3. 链式 API 里显式传入实体类型
+2. 链式 API 里显式传入实体类型
 
 示例：
 
