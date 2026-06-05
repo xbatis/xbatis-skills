@@ -124,7 +124,6 @@ queryChain().eq(Objects.nonNull(id), SysUser::getId, id);
 
 注意：
 
-- 源码方法名是 `nonNull`，不要写成 `nonull`
 - predicate 重载把“值是否有效”的判断和字段绑定在一起，优先级高于在外层散落 `if`
 - boolean `when` 重载适合 predicate 不方便表达的条件
 - 如果一组条件需要括号包裹，尤其组内有 `or` 条件，使用 `.nested(chain -> ...)`
