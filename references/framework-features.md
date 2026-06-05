@@ -71,7 +71,7 @@ Agent 规则：
 3. 创建时间字段优先使用 `@TableField(defaultValue = "{NOW}", update = false)`
 4. 修改时间字段优先使用 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
 5. 普通字段无特殊语义时，不要为了声明列名机械补 `@TableField`
-6. 项目推荐启用 Lombok，并在实体类上优先使用 `@FieldNameConstants`
+6. 无特殊要求时项目必须集成 Lombok，并在实体类上优先使用 `@FieldNameConstants`
 7. 实体类只保留数据库表字段，禁止混入非数据库表字段
 
 ## 结果映射 / 枚举展示
@@ -132,4 +132,3 @@ Agent 规则：
 18. 使用 `Methods` 风格时，优先静态导入所需方法
 19. 方法嵌套优先写成 `eq(gt(...))` 这类形式，避免混用多种调用风格
 20. QO 中凡是不是数据库操作字段、需要忽略的字段，优先使用 `@Ignore` 或 `@Ignores`
-

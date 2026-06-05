@@ -176,6 +176,13 @@ Controller / API 对外返回优先使用 VO，不建议直接返回实体类：
 - 展示型、联表型、聚合型结果优先用 VO
 - DAO 内部和纯持久化读写方法可以返回实体，但不要把实体直接穿透到接口响应
 
+Controller / API 入参优先保持可演进：
+
+- 入参超过 2 个时，使用 QO、DTO、Model 等对象接收
+- 即使当前不超过 2 个，但大概率后续会增加过滤项、分页项、排序项或业务参数，也应提前使用对象
+- Controller 接收对象后传给 Service 层，不要把多个散参继续透传到 Service / DAO
+- 查询入参优先使用 QO，修改入参优先使用 Model 或项目统一的 DTO / Model 约定
+
 不要为了前端展示字段污染实体类，也不要先查实体再手工 copy 成 VO；优先使用 `select(VO.class)`、`returnType(VO.class)` 和结果映射注解。
 
 补充规则：

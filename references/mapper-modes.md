@@ -29,6 +29,7 @@
 - 凭习惯选择 `MybatisMapper<T>` 或 `BasicMapper`
 - 在同一模块内混用两套风格
 - 不看全局配置就新增 Mapper
+- 单 Mapper 模式下主动生成或调用 `XbatisGlobalConfig.setSingleMapperClass(...)`
 - 在 Service / Controller 里绕过 DAO 直接写 `QueryChain.of(...)`、`UpdateChain.of(...)`、`InsertChain.of(...)`、`DeleteChain.of(...)`
 
 ## DAO 层规则
@@ -134,7 +135,7 @@ UpdateChain / InsertChain / DeleteChain：
 
 - 会定义一个继承 `BasicMapper` 的接口
 - 通常会命名为统一的 `XbatisMapper`
-- 通过全局配置指定为单 Mapper 类
+- 不需要主动调用 `XbatisGlobalConfig.setSingleMapperClass(...)`
 - 旧代码或无 DAO 代码里可能出现 `QueryChain.of(basicMapper, Entity.class)`
 - CRUD 时可能通过 `basicMapper.save(Entity)` 或 `basicMapper.getById(Entity.class, id)` 调用
 
@@ -150,6 +151,7 @@ Mapper：
 
 - 定义一个统一 `XbatisMapper extends BasicMapper`
 - Spring 项目配置 `@MapperScan` 扫描这个统一 Mapper 所在包；如果项目已使用 `markerInterface = BasicMapper.class`，延续现有配置
+- 不生成 `XbatisGlobalConfig.setSingleMapperClass(...)` 调用
 
 QueryChain：
 
@@ -188,6 +190,7 @@ XML：
 5. Service 层优先调用 DAO 方法，不直接持有 `BasicMapper`
 6. 统一 Mapper 注入收敛到项目 BaseDao 的 `setMapper(...)`，并配合 Spring、Solon 等容器自动注入注解完成；业务 DAO 实现类不重写
 7. 业务 DAO 接口继承 `Dao<T, ID>`，实现类继承项目 BaseDao 并实现业务 DAO 接口
+8. 不主动调用 `XbatisGlobalConfig.setSingleMapperClass(...)`
 
 ## 判断规则
 
@@ -248,6 +251,7 @@ XML：
 11. 业务 DAO 里堆满 `getById`、`save`、`update`、`deleteById`、`count`、`exists` 这类基础能力的简单转发方法
 12. 业务 DAO 没有接口，或接口继承了不建议开发者使用的 `IDao<T, ID>`
 13. 基础方法被二次命名为 `findById`、`create`、`modify`，偏离框架 Dao / BaseDao 真实 API
+14. 单 Mapper 模式下主动调用 `XbatisGlobalConfig.setSingleMapperClass(...)`
 
 ## 不推荐行为
 

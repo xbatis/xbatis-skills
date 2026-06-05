@@ -17,6 +17,7 @@
 4. 版本号优先以当前本地 xbatis 源码 README 或官网对应章节为准，不要凭空硬编码旧版本
 5. 先把容器、数据源、Mapper 扫描接起来，再生成实体、Mapper、DAO、Service
 6. 开发环境必须开启 xbatis POJO 安全检查；测试和生产环境不要求默认开启；不知道真实注解包名或配置项时，先查当前 starter 依赖和本地源码
+7. 无特殊要求时，项目必须集成 Lombok；实体、VO、QO、DTO、Model 优先使用 Lombok，字段常量按需使用 `@FieldNameConstants`
 
 ## 版本选择
 
@@ -65,6 +66,17 @@ Spring Boot 项目优先使用：
 - `xbatis.version` 按当前 Spring Boot 主版本选择对应版本线
 - JDBC 驱动必须补，例如 `mysql-connector-j`
 - 连接池优先复用 Spring Boot 默认或项目现有方案；不要无故再引入另一套数据源实现
+- 无特殊要求时必须补 Lombok 依赖；版本优先交给 Spring Boot parent 或项目依赖管理，不要凭空硬编码
+
+Lombok 依赖示例：
+
+```xml
+<dependency>
+    <groupId>org.projectlombok</groupId>
+    <artifactId>lombok</artifactId>
+    <optional>true</optional>
+</dependency>
+```
 
 ### 数据源配置
 
@@ -99,6 +111,7 @@ public class XbatisApplication {
 
 - 如果项目统一定义 `XbatisMapper extends BasicMapper`，优先扫描统一 Mapper 所在包
 - 如果项目已使用 `markerInterface = BasicMapper.class`，延续现有配置
+- 单 Mapper 模式下不需要主动生成或调用 `XbatisGlobalConfig.setSingleMapperClass(...)`
 
 多 Mapper 模式补充规则：
 
@@ -111,11 +124,24 @@ public class XbatisApplication {
 
 Spring / Spring Boot 项目优先使用当前 starter 支持的 `@XbatisPojoCheckScan`：
 
+`basePackages` 方案：
+
 ```java
 @Profile("dev")
 @Configuration
 @XbatisPojoCheckScan(
-        basePackages = "com.example",
+        basePackages = "com.example"
+)
+public class XbatisSafeCheckConfig {
+}
+```
+
+细分包路径方案：
+
+```java
+@Profile("dev")
+@Configuration
+@XbatisPojoCheckScan(
         modelPackages = "com.example.model",
         resultEntityPackages = "com.example.vo",
         conditionTargetPackages = "com.example.qo",
@@ -130,6 +156,7 @@ public class XbatisSafeCheckConfig {
 - README 记录的注解包名是 `org.mybatis.spring.boot.autoconfigure.XbatisPojoCheckScan`
 - 当前 xbatis core 源码里没有该类型；生成 import 前必须从当前项目依赖或本地 starter 源码确认真实包名
 - 新项目默认只生成 dev profile 下的安全检查配置；测试和生产环境不要求默认开启
+- `basePackages` 和 `modelPackages` / `resultEntityPackages` / `conditionTargetPackages` / `orderByTargetPackages` 是二选一的扫描方案，不要同时生成
 - 扫描范围必须覆盖 VO、Model、QO、排序对象所在包，不要只扫描实体包
 
 ## Solon 接入
@@ -157,6 +184,7 @@ Solon 项目优先使用：
 
 - `xbatis-solon-plugin` 放在 `mybatis-solon-plugin` 前面
 - 版本号优先按本地源码或官方 solon 章节确认
+- 无特殊要求时必须补 Lombok 依赖；版本优先沿用项目依赖管理
 
 ### solon.yml 配置
 
@@ -173,6 +201,16 @@ ds:
 mybatis.master:
   pojoCheck:
     basePackages: com.example
+  mappers:
+    - "com.example.mapper"
+    - "classpath:mapper/**/*.xml"
+```
+
+或使用细分包路径方案：
+
+```yaml
+mybatis.master:
+  pojoCheck:
     modelPackages: com.example.model
     resultEntityPackages: com.example.vo
     conditionTargetPackages: com.example.qo
@@ -188,6 +226,7 @@ mybatis.master:
 - `mappers` 可放包路径，也可放 XML 路径
 - 开发环境必须配置 `pojoCheck`；多数据源项目要在 dev 配置中对应 `mybatis.<beanName>` 下配置
 - 测试和生产环境不要求默认配置 `pojoCheck`；除非项目明确要求，不要在 test/prod 配置里生成
+- `basePackages` 和其他细分包路径是二选一方案，不要在同一个 `pojoCheck` 中同时生成
 - `pojoCheck` 路径可按项目约定使用逗号分隔的多个包路径
 
 ### DataSource Bean

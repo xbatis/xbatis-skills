@@ -84,6 +84,7 @@ public interface MybatisBasicMapper extends BasicMapper {
 
 1. `@MapperScan(..., markerInterface = BasicMapper.class)`
 2. 链式 API 里显式传入实体类型
+3. 不需要主动调用 `XbatisGlobalConfig.setSingleMapperClass(...)`
 
 示例：
 
@@ -98,6 +99,7 @@ QueryChain.of(mybatisBasicMapper, SysUser.class)
 - DSL 必须知道实体类，否则无法推断表和字段
 - 复杂 XML 调用通过 `withSqlSession(...)`
 - 如果代码库已经采用单 Mapper，就继续沿用，不要混入大量实体 Mapper
+- 单 Mapper 模式下不要主动生成 `XbatisGlobalConfig.setSingleMapperClass(...)` 调用
 
 ## DAO 注入约定
 

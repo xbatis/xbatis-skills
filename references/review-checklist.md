@@ -61,13 +61,14 @@
 - 创建时间字段优先使用 `@TableField(defaultValue = "{NOW}", update = false)`
 - 修改时间字段优先使用 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
 - 持久化枚举实现 `cn.xbatis.core.mybatis.typeHandler.EnumSupport<T>`，并提供稳定的 `getCode()`
-- 项目启用了 Lombok，实体或条件对象优先使用 `@FieldNameConstants`
+- 无特殊要求时项目已集成 Lombok，实体或条件对象优先使用 `@FieldNameConstants`
 - 条件对象优先使用 `@ConditionTarget` 体系，并在 `where()` 中使用 `WhereUtil.where(this)`
 - 项目 BaseDao 的 `setMapper(...)` 带 Spring、Solon 等容器自动注入注解，业务 DAO 子类不重复重写 `setMapper(...)`
 - VO、QO、Model 中非数据库操作字段使用 `@Ignore` 或 `@Ignores`
 - 实体类保持单一性，不混入非数据库表字段
 - 复杂表达先尝试 SQL 模板，再考虑 XML
 - Mapper 组织方式与项目当前的单 Mapper / 多 Mapper 模式一致
+- 单 Mapper 模式下没有主动调用 `XbatisGlobalConfig.setSingleMapperClass(...)`
 - 不知道类路径、真实类名、方法名、注解包名或泛型签名时，先基于本地 xbatis 源码确认，没有凭空猜测
 
 ### 风险信号
@@ -274,6 +275,7 @@
 
 - 开发环境是否开启 xbatis POJO 安全检查
 - 安全检查扫描范围是否覆盖 VO、Model、QO、排序对象所在包
+- 安全检查扫描范围是否只选择一种方案：`basePackages` 或细分包路径，不要两套同时配置
 - Spring / Spring Boot 使用 `@XbatisPojoCheckScan` 时，import 是否已按当前 starter 依赖确认真实包名
 - Solon 是否在开发环境配置的 `mybatis.<数据源 bean 名称>.pojoCheck` 下声明扫描包
 - 测试和生产环境是否避免默认开启安全检查，除非项目明确要求
@@ -282,6 +284,7 @@
 
 - 开发环境未开启安全检查，导致 VO、Model、条件对象、排序对象的映射问题延后到运行期暴露
 - 只扫描实体包，漏掉真正需要检查的 VO / Model / QO / OrderBy 包
+- 同时配置 `basePackages` 和细分包路径，导致扫描范围语义不清
 - 未确认 starter 真实类型就凭 README 包名直接生成 import
 - 在项目未要求时为 test/prod 默认开启安全检查，增加不必要的启动开销
 
@@ -376,6 +379,7 @@
 - DAO 基类是否匹配当前模式
 - 新项目或无既有约束时是否优先推荐单 Mapper + DAO
 - 单 Mapper 模式下是否存在统一 `XbatisMapper extends BasicMapper`，以及 `@MapperScan` 是否与该模式一致
+- 单 Mapper 模式下是否避免主动调用 `XbatisGlobalConfig.setSingleMapperClass(...)`
 - 有 DAO 层时，事务是否强烈推荐放在 DAO 方法上
 - 是否已经先下载并分析本地 xbatis 源码
 - 是否对齐项目当前 VO、分页、条件对象、动态值规则
@@ -394,6 +398,7 @@
 - 有 DAO 层却把事务主要放在 Service 层，导致事务边界与数据库访问脱节
 - 不知道 xbatis 如何使用时，没有从本地 xbatis 源码目录分析使用方法
 - 单 Mapper 模式下没有统一 `XbatisMapper`，或 `@MapperScan` 与单 Mapper 入口不一致
+- 单 Mapper 模式下主动调用 `XbatisGlobalConfig.setSingleMapperClass(...)`
 - 业务 DAO 直接继承框架 DAO 实现，重复散落 Mapper 注入细节
 - 业务 DAO 只有实现类没有接口，或接口继承 `IDao<T, ID>`
 - 业务 DAO 编写大量与 BaseDao / 内置 Mapper 重复的简单方法，增加维护面但没有提供业务语义
@@ -444,19 +449,19 @@
 12. 实体普通字段默认不机械写 `@TableField`；创建时间、修改时间优先复用 `@TableField` 动态默认值能力
 13. 条件对象优先实现 `QO` 并配合 `@ConditionTarget` 体系；`where()` 优先使用 `WhereUtil.where(this)`
 14. VO、QO、Model 中非数据库操作字段优先使用 `@Ignore` / `@Ignores`
-15. xbatis 注解里涉及字段引用时优先使用 `Fields` 常量；select 别名优先使用 getter / 字段引用形式
+15. 无特殊要求时项目集成 Lombok；xbatis 注解里涉及字段引用时优先使用 `@FieldNameConstants` 生成的 `Fields` 常量；select 别名优先使用 getter / 字段引用形式
 16. 单条数据先查后改部分字段时，优先使用 `partialUpdate(...)` 精准修改
 17. `UpdateChain`、`InsertChain`、`DeleteChain` 最终统一通过 `execute()` 执行
 18. 分页走统一 `Pager`；1 对多分页 join 需要处理 join 优化
 19. 多租户、逻辑删除、乐观锁、动态值走框架能力
-20. 单 Mapper 模式优先统一 `XbatisMapper extends BasicMapper` 并配置 `@MapperScan`
+20. 单 Mapper 模式优先统一 `XbatisMapper extends BasicMapper` 并配置 `@MapperScan`，不主动调用 `XbatisGlobalConfig.setSingleMapperClass(...)`
 21. 有 DAO 层时，事务强烈推荐在 DAO 方法上开启
 22. DAO 注入收敛在项目 BaseDao 的 `setMapper(...)`，并配合 Spring、Solon 等容器自动注入注解完成装配；业务 DAO 实现类不重复重写
 23. 实体类只承载数据库表字段，保持单一性
 24. 实体类注解只能写在实体类上
 25. 持久化枚举实现 `EnumSupport<T>` 并通过 `getCode()` 提供数据库存储值
 26. 不知道类路径或类名时，先查本地 xbatis 源码，不凭空猜测
-27. 开发环境开启 xbatis POJO 安全检查，并覆盖 VO、Model、QO、排序对象所在包；测试和生产环境不默认开启
+27. 开发环境开启 xbatis POJO 安全检查，并覆盖 VO、Model、QO、排序对象所在包；`basePackages` 和细分包路径二选一；测试和生产环境不默认开启
 28. 业务 DAO 不写和 BaseDao / 内置 Mapper 重复的简单方法
 29. 基础按 id、save、update 方法保持框架真实命名和签名
 30. XML / 原生 SQL 只在必要时出现
