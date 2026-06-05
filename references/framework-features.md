@@ -69,7 +69,7 @@ Agent 规则：
 1. 优先用框架动态值和插入/更新事件
 2. 不要在 Controller / Service 层重复填这些审计字段
 3. 创建时间字段优先使用 `@TableField(defaultValue = "{NOW}", update = false)`
-4. 修改时间字段优先使用 `@TableField(updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
+4. 修改时间字段优先使用 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
 5. 普通字段无特殊语义时，不要为了声明列名机械补 `@TableField`
 6. 项目推荐启用 Lombok，并在实体类上优先使用 `@FieldNameConstants`
 7. 实体类只保留数据库表字段，禁止混入非数据库表字段

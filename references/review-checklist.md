@@ -44,8 +44,10 @@
 - 默认有 DAO 层，Service 不直接创建 Chain
 - 单 Mapper 项目 BaseDao 继承 `BasicDaoImpl<T, ID>`
 - 多 Mapper 项目 BaseDao 继承 `DaoImpl<T, ID>`
-- 业务 DAO 继承项目 BaseDao
+- 业务 DAO 接口继承 `cn.xbatis.core.mvc.Dao<T, ID>`
+- 业务 DAO 实现类继承项目 BaseDao，并实现对应业务 DAO 接口
 - 业务 DAO 没有编写与 BaseDao、DAO 基础方法或内置 Mapper 方法等价的简单转发方法
+- 基础按 id、save、update 方法保持框架 `Dao<T, ID>` / BaseDao / 内置 Mapper 的真实方法名和签名
 - 有 DAO 层时，事务强烈推荐定义在 DAO 方法上
 - 按 id 查询实体或单表部分列使用 `getById`
 - 按 id 查询单列值使用 `getValueById`
@@ -57,7 +59,7 @@
 - 联表 VO 优先 `select(VO.class)` / `returnType(VO.class)`，需要枚举名称时优先 `@PutEnumValue`
 - 实体普通字段没有机械补 `@TableField("列名")`
 - 创建时间字段优先使用 `@TableField(defaultValue = "{NOW}", update = false)`
-- 修改时间字段优先使用 `@TableField(updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
+- 修改时间字段优先使用 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
 - 持久化枚举实现 `cn.xbatis.core.mybatis.typeHandler.EnumSupport<T>`，并提供稳定的 `getCode()`
 - 项目启用了 Lombok，实体或条件对象优先使用 `@FieldNameConstants`
 - 条件对象优先使用 `@ConditionTarget` 体系，并在 `where()` 中使用 `WhereUtil.where(this)`
@@ -81,7 +83,10 @@
 - 单 Mapper 项目 BaseDao 继承了 `DaoImpl`
 - 多 Mapper 项目 BaseDao 继承了 `BasicDaoImpl`
 - 业务 DAO 到处直接继承 `BasicDaoImpl` / `DaoImpl`，没有项目级 BaseDao
+- 业务 DAO 没有接口，或接口没有继承 `Dao<T, ID>`
+- 业务 DAO 接口继承了源码注释不建议开发者使用的 `IDao<T, ID>`
 - 业务 DAO 堆满 `getById`、`save`、`update`、`deleteById`、`count`、`exists` 这类基础能力的简单转发方法
+- 基础方法被二次命名为 `findById`、`create`、`modify`，偏离框架 Dao / BaseDao 真实 API
 - 按 id 查询实体、部分列或单列值时默认写 `QueryChain`
 - 有 DAO 层却在 Service / Controller 中直接写 `QueryChain.of(...)` 或其他 `Chain.of(...)`
 - 本可用 `@Fetch` 的场景机械使用 join
@@ -138,11 +143,14 @@
 - `InsertChain` 是否通过 DAO 内部 `insertChain()` 创建
 - `DeleteChain` 是否通过 DAO 内部 `deleteChain()` 创建
 - Chain 是否与当前单 Mapper / 多 Mapper 模式一致
+- DAO 层是否有业务 DAO 接口，且接口继承 `Dao<T, ID>` 而不是 `IDao<T, ID>`
+- 业务 DAO 实现类是否继承项目 BaseDao 并实现对应接口
 - 修改操作是否使用 Model 类作为传参载体
 - Model 是否允许直接参与 `save`、`update`
 - update 字段范围是否只覆盖本次业务允许变化的字段
 - 项目 BaseDao 是否通过带容器自动注入注解的 `setMapper(...)` 注入 Mapper
-- 业务 DAO 子类是否避免重复定义 Mapper 字段、构造器注入或 `setMapper(...)`
+- 业务 DAO 实现类是否避免重复定义 Mapper 字段、构造器注入或 `setMapper(...)`
+- 基础按 id、save、update 方法是否保持框架真实命名和签名
 - Model 中非数据库操作字段是否使用 `@Ignore` 或 `@Ignores`
 - 单条数据先查后改的场景是否优先使用 `partialUpdate(...)`
 - `UpdateChain`、`InsertChain`、`DeleteChain` 是否最终调用 `execute()`
@@ -152,6 +160,7 @@
 - 在 Service / Controller 里直接创建 `UpdateChain.of(...)`、`InsertChain.of(...)`、`DeleteChain.of(...)`
 - 单 Mapper 模式下漏传实体类型或混入实体 Mapper
 - 多 Mapper 模式下绕过 DAO 直接依赖具体 Mapper
+- 业务 DAO 没有接口，或接口继承 `IDao<T, ID>` 而不是 `Dao<T, ID>`
 - 把查询实体、响应 VO 或全量实体直接作为修改入参
 - 因为前端传了字段就默认全部参与 update
 - 项目已有统一 BaseDao 注入规范，却继续使用构造方法传 Mapper，或每个业务 DAO 子类重复重写 `setMapper(...)`
@@ -319,7 +328,7 @@
 
 - 创建时间、修改时间、操作人是否复用框架动态值体系
 - 创建时间是否优先使用 `@TableField(defaultValue = "{NOW}", update = false)`
-- 修改时间是否优先使用 `@TableField(updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
+- 修改时间是否优先使用 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
 - 普通字段是否避免机械补 `@TableField("列名")`
 - 实体类是否保持只承载数据库表字段
 
@@ -373,6 +382,7 @@
 - 项目是否统一推荐 Lombok `@FieldNameConstants`
 - xbatis 注解中的字段依赖是否优先使用 `Fields`
 - VO、QO、Model 是否统一使用 `@Ignore` / `@Ignores` 忽略非数据库操作字段
+- 业务 DAO 接口 / 实现类结构是否完整，接口是否继承 `Dao<T, ID>`
 - 业务 DAO 是否只保留有业务语义、组合查询、事务边界或复用价值的方法
 
 重点风险：
@@ -385,6 +395,7 @@
 - 不知道 xbatis 如何使用时，没有从本地 xbatis 源码目录分析使用方法
 - 单 Mapper 模式下没有统一 `XbatisMapper`，或 `@MapperScan` 与单 Mapper 入口不一致
 - 业务 DAO 直接继承框架 DAO 实现，重复散落 Mapper 注入细节
+- 业务 DAO 只有实现类没有接口，或接口继承 `IDao<T, ID>`
 - 业务 DAO 编写大量与 BaseDao / 内置 Mapper 重复的简单方法，增加维护面但没有提供业务语义
 - 项目已有对象转条件规范，却新写一套手工筛选逻辑
 - 同仓库里混入另一套 ORM 组织习惯
@@ -420,7 +431,7 @@
 一段 xbatis 代码如果满足下面这些条件，通常可认为是“像 xbatis”的：
 
 1. 简单 CRUD 走内置 Mapper
-2. 默认有 DAO 层，且项目 BaseDao 基类与 Mapper 模式一致
+2. 默认有 DAO 层，且业务 DAO 接口继承 `Dao<T, ID>`，实现类继承项目 BaseDao
 3. 按 id 查询实体或部分列走 `getById`，按 id 查单列值走 `getValueById`
 4. 常规查询在 DAO 内走 `queryChain()`
 5. 搜索查询才使用 `forSearch(true)`
@@ -440,14 +451,15 @@
 19. 多租户、逻辑删除、乐观锁、动态值走框架能力
 20. 单 Mapper 模式优先统一 `XbatisMapper extends BasicMapper` 并配置 `@MapperScan`
 21. 有 DAO 层时，事务强烈推荐在 DAO 方法上开启
-22. DAO 注入收敛在项目 BaseDao 的 `setMapper(...)`，并配合 Spring、Solon 等容器自动注入注解完成装配；业务 DAO 子类不重复重写
+22. DAO 注入收敛在项目 BaseDao 的 `setMapper(...)`，并配合 Spring、Solon 等容器自动注入注解完成装配；业务 DAO 实现类不重复重写
 23. 实体类只承载数据库表字段，保持单一性
 24. 实体类注解只能写在实体类上
 25. 持久化枚举实现 `EnumSupport<T>` 并通过 `getCode()` 提供数据库存储值
 26. 不知道类路径或类名时，先查本地 xbatis 源码，不凭空猜测
 27. 开发环境开启 xbatis POJO 安全检查，并覆盖 VO、Model、QO、排序对象所在包；测试和生产环境不默认开启
 28. 业务 DAO 不写和 BaseDao / 内置 Mapper 重复的简单方法
-29. XML / 原生 SQL 只在必要时出现
-30. 与项目已有 xbatis 风格一致
+29. 基础按 id、save、update 方法保持框架真实命名和签名
+30. XML / 原生 SQL 只在必要时出现
+31. 与项目已有 xbatis 风格一致
 
 如果一段代码反复违背这些条件，优先判定它偏离了 xbatis 习惯，而不是继续在现有写法上做局部修补。

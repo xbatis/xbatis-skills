@@ -37,6 +37,10 @@
 
 - 单 Mapper 模式：BaseDao 继承 `BasicDaoImpl<T, ID>`
 - 多 Mapper 模式：BaseDao 继承 `DaoImpl<T, ID>`
+- 业务 DAO 必须拆成接口和实现类
+- 业务 DAO 接口继承 `cn.xbatis.core.mvc.Dao<T, ID>`
+- 业务 DAO 实现类继承项目 BaseDao，并实现对应业务 DAO 接口
+- 不要让业务 DAO 接口继承 `cn.xbatis.core.mvc.IDao<T, ID>`；源码注释说明 `IDao` 是旧接口且不建议开发者使用
 
 创建业务 DAO 前，先创建项目级 BaseDao：
 
@@ -45,16 +49,17 @@
 - Solon 项目按项目既有习惯使用 `@Inject`、`@Db` 或 setter 注入
 - 项目 BaseDao 内部负责封装通用能力，并在 `setMapper(...)` 方法上添加当前容器框架的自动注入注解
 - BaseDao 的 `setMapper(...)` 内部调用父类 `setMapper(mapper)` 完成 Mapper 绑定
-- 业务 DAO 子类只继承项目 BaseDao，不需要也不应重写 `setMapper(...)`
+- 业务 DAO 实现类只继承项目 BaseDao，不需要也不应重写 `setMapper(...)`
 - 不要在每个业务 DAO 里重复写 Mapper 字段、构造器注入或容器注入细节
 - 不要在业务 DAO 里编写与 BaseDao、DAO 基础方法或内置 Mapper 方法完全等价的简单转发方法
 - 业务 DAO 只保留有业务语义、组合查询、事务边界或复用价值的方法
+- 基础按 id、save、update 等方法强烈建议保持和框架 `Dao<T, ID>` / BaseDao / 内置 Mapper 的真实方法名和签名一致，不要二次包装命名
 - 有 DAO 层时，事务边界强烈推荐定义在 DAO 方法上
 
 BaseDao 示例方向：
 
-- 单 Mapper：先定义统一 `XbatisMapper extends BasicMapper`，再让 `BaseDao<T, ID> extends BasicDaoImpl<T, ID>`；`BaseDao#setMapper(XbatisMapper mapper)` 上加容器自动注入注解，子类不重写
-- 多 Mapper：`BaseDao<T, ID> extends DaoImpl<T, ID>`；`BaseDao#setMapper(...)` 上加容器自动注入注解，子类不重写。具体参数类型和泛型能否由容器正确解析，必须根据当前项目和本地 xbatis 源码确认，不得猜测
+- 单 Mapper：先定义统一 `XbatisMapper extends BasicMapper`，再让 `BaseDao<T, ID> extends BasicDaoImpl<T, ID>`；`BaseDao#setMapper(XbatisMapper mapper)` 上加容器自动注入注解，业务 DAO 实现类不重写
+- 多 Mapper：`BaseDao<T, ID> extends DaoImpl<T, ID>`；`BaseDao#setMapper(...)` 上加容器自动注入注解，业务 DAO 实现类不重写。具体参数类型和泛型能否由容器正确解析，必须根据当前项目和本地 xbatis 源码确认，不得猜测
 
 DAO 内部优先使用框架已提供的 Chain 创建方法：
 
@@ -104,7 +109,8 @@ QueryChain：
 
 DAO：
 
-- `public class UserDao extends BaseDao<User, Long> {}`
+- `public interface UserDao extends Dao<User, Long> {}`
+- `public class UserDaoImpl extends BaseDao<User, Long> implements UserDao {}`
 
 UpdateChain / InsertChain / DeleteChain：
 
@@ -119,7 +125,8 @@ UpdateChain / InsertChain / DeleteChain：
 3. 不要无故引入 `BasicMapper`
 4. 不要为了少一个接口，把项目改成单 Mapper 风格
 5. Service 层优先调用 DAO 方法，不直接持有具体实体 Mapper
-6. Mapper 注入收敛到项目 BaseDao 的 `setMapper(...)`，并补 Spring、Solon 等容器自动注入注解；业务 DAO 子类不重写 `setMapper(...)`
+6. Mapper 注入收敛到项目 BaseDao 的 `setMapper(...)`，并补 Spring、Solon 等容器自动注入注解；业务 DAO 实现类不重写 `setMapper(...)`
+7. 业务 DAO 接口继承 `Dao<T, ID>`，实现类继承项目 BaseDao 并实现业务 DAO 接口
 
 ## 单 Mapper 模式
 
@@ -158,7 +165,8 @@ QueryChain：
 
 DAO：
 
-- `public class UserDao extends BaseDao<User, Long> {}`
+- `public interface UserDao extends Dao<User, Long> {}`
+- `public class UserDaoImpl extends BaseDao<User, Long> implements UserDao {}`
 
 UpdateChain / InsertChain / DeleteChain：
 
@@ -178,7 +186,8 @@ XML：
 3. DAO 层使用项目 BaseDao，BaseDao 基于 `BasicDaoImpl<T, ID>`
 4. 自定义 SQL、withSqlSession、代码生成都要围绕统一 Mapper 设计
 5. Service 层优先调用 DAO 方法，不直接持有 `BasicMapper`
-6. 统一 Mapper 注入收敛到项目 BaseDao 的 `setMapper(...)`，并配合 Spring、Solon 等容器自动注入注解完成；业务 DAO 子类不重写
+6. 统一 Mapper 注入收敛到项目 BaseDao 的 `setMapper(...)`，并配合 Spring、Solon 等容器自动注入注解完成；业务 DAO 实现类不重写
+7. 业务 DAO 接口继承 `Dao<T, ID>`，实现类继承项目 BaseDao 并实现业务 DAO 接口
 
 ## 判断规则
 
@@ -221,7 +230,9 @@ XML：
 5. 自定义 SQL 的 namespace 和调用方式是否与当前模式一致
 6. DAO / Repository 是否错误混入了另一种模式
 7. `QueryChain` / `UpdateChain` / `InsertChain` / `DeleteChain` 是否优先在 DAO 内通过框架方法创建
-8. 项目 BaseDao 的 `setMapper(...)` 是否带 Spring、Solon 等容器自动注入注解，业务 DAO 子类是否避免重复重写
+8. 项目 BaseDao 的 `setMapper(...)` 是否带 Spring、Solon 等容器自动注入注解，业务 DAO 实现类是否避免重复重写
+9. 业务 DAO 是否有接口，且接口继承 `Dao<T, ID>` 而不是 `IDao<T, ID>`
+10. 基础按 id、save、update 方法是否保持框架真实命名和签名
 
 高风险问题：
 
@@ -236,6 +247,8 @@ XML：
 9. 业务 DAO 通过构造方法一路传 Mapper，或每个子类重复重写 `setMapper(...)`
 10. 项目 BaseDao 的 `setMapper(...)` 缺少 Spring、Solon 等容器自动注入注解，导致 DAO 无法按统一方式装配
 11. 业务 DAO 里堆满 `getById`、`save`、`update`、`deleteById`、`count`、`exists` 这类基础能力的简单转发方法
+12. 业务 DAO 没有接口，或接口继承了不建议开发者使用的 `IDao<T, ID>`
+13. 基础方法被二次命名为 `findById`、`create`、`modify`，偏离框架 Dao / BaseDao 真实 API
 
 ## 不推荐行为
 
@@ -246,3 +259,5 @@ XML：
 5. 有 DAO 层却把事务主要放到 Service 层
 6. 业务 DAO 明明已有统一 BaseDao 注入规范，却继续使用构造方法传 Mapper 或重复重写 `setMapper(...)`
 7. 业务 DAO 编写大量和 BaseDao / 内置 Mapper 重复的简单方法
+8. 不创建业务 DAO 接口，或业务 DAO 接口继承 `IDao<T, ID>`
+9. 对基础按 id、save、update 方法做二次命名包装
