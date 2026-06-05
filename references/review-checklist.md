@@ -60,7 +60,7 @@
 - 实体普通字段没有机械补 `@TableField("列名")`
 - 创建时间字段优先使用 `@TableField(defaultValue = "{NOW}", update = false)`
 - 修改时间字段优先使用 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
-- 持久化枚举实现 `cn.xbatis.core.mybatis.typeHandler.EnumSupport<T>`，并提供稳定的 `getCode()`
+- 持久化枚举实现 `cn.xbatis.core.mybatis.typeHandler.EnumSupport<T>`，并提供稳定的 `getCode()` 和找不到返回 `null` 的 `of(T code)`
 - 无特殊要求时项目已集成 Lombok，实体或条件对象优先使用 `@FieldNameConstants`
 - 条件对象优先使用 `@ConditionTarget` 体系，并在 `where()` 中使用 `WhereUtil.where(this)`
 - 项目 BaseDao 的 `setMapper(...)` 带 Spring、Solon 等容器自动注入注解，业务 DAO 子类不重复重写 `setMapper(...)`
@@ -98,7 +98,7 @@
 - 项目已适合对象转条件，却没用 `@ConditionTarget` 体系，或 `where()` 没有优先使用 `WhereUtil.where(this)`
 - DAO 注入仍然以构造方法传 Mapper 为主，或每个业务 DAO 子类重复重写 `setMapper(...)`
 - 项目 BaseDao 的 `setMapper(...)` 缺少当前容器框架的自动注入注解
-- 持久化枚举没有实现 `EnumSupport<T>`，或错误依赖 `ordinal()` / `name()` 作为存储值
+- 持久化枚举没有实现 `EnumSupport<T>`，缺少 `of(T code)`，或错误依赖 `ordinal()` / `name()` 作为存储值
 - xbatis 注解里继续写字符串字段名，本可使用 `SysUser.Fields.id`
 - VO、QO、Model 中存在非数据库操作字段，却没有用 `@Ignore` 或 `@Ignores`
 - 实体类混入非数据库表字段
@@ -459,7 +459,7 @@
 22. DAO 注入收敛在项目 BaseDao 的 `setMapper(...)`，并配合 Spring、Solon 等容器自动注入注解完成装配；业务 DAO 实现类不重复重写
 23. 实体类只承载数据库表字段，保持单一性
 24. 实体类注解只能写在实体类上
-25. 持久化枚举实现 `EnumSupport<T>` 并通过 `getCode()` 提供数据库存储值
+25. 持久化枚举实现 `EnumSupport<T>` 并通过 `getCode()` 提供数据库存储值，同时提供找不到返回 `null` 的 `of(T code)`
 26. 不知道类路径或类名时，先查本地 xbatis 源码，不凭空猜测
 27. 开发环境开启 xbatis POJO 安全检查，并覆盖 VO、Model、QO、排序对象所在包；`basePackages` 和细分包路径二选一；测试和生产环境不默认开启
 28. 业务 DAO 不写和 BaseDao / 内置 Mapper 重复的简单方法

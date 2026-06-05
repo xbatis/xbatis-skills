@@ -81,9 +81,10 @@ Agent 规则：
 1. 返回 VO 时，优先让框架自动映射，而不是手工 copy
 2. 需要返回枚举名称时，优先使用 `@PutEnumValue`
 3. 持久化枚举必须实现 `cn.xbatis.core.mybatis.typeHandler.EnumSupport<T>`，通过 `getCode()` 提供数据库存储值
-4. 枚举字段类型 `T` 按数据库实际存储类型选择，不要默认使用 `ordinal()` 或 `name()`
-5. 不要为了展示字段把实体类硬改成接口响应模型
-6. 实体类注解只能写在实体类上，禁止写在 VO、DTO、QO、Model 等其他类上
+4. 生成持久化枚举时必须提供 `of(T code)` 静态方法，按 `code` 匹配，找不到时返回 `null`
+5. 枚举字段类型 `T` 按数据库实际存储类型选择，不要默认使用 `ordinal()` 或 `name()`
+6. 不要为了展示字段把实体类硬改成接口响应模型
+7. 实体类注解只能写在实体类上，禁止写在 VO、DTO、QO、Model 等其他类上
 7. VO 优先使用真实存在的结果映射注解，例如 `@ResultEntity`、`@NestedResultEntity`、`@NestedResultEntityField`、`@ResultCalcField`
 8. 注解里只要有字段依赖，优先使用 Lombok `@FieldNameConstants` 生成的 `Fields` 常量，例如 `SysUser.Fields.id`
 9. VO 中凡是不是数据库操作字段、需要忽略的字段，优先使用 `@Ignore` 或 `@Ignores`

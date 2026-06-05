@@ -37,12 +37,36 @@
 
 ```java
 public enum Status implements EnumSupport<Integer> {
+
+    ENABLED(1),
+    DISABLED(0);
+
+    private final Integer code;
+
+    Status(Integer code) {
+        this.code = code;
+    }
+
+    @Override
+    public Integer getCode() {
+        return code;
+    }
+
+    public static Status of(Integer code) {
+        for (Status item : values()) {
+            if (java.util.Objects.equals(item.getCode(), code)) {
+                return item;
+            }
+        }
+        return null;
+    }
 }
 ```
 
 规则：
 
 - 枚举通过 `getCode()` 返回数据库存储值
+- 枚举生成时必须提供 `of(T code)` 静态方法，找不到匹配项返回 `null`
 - `T` 按数据库字段实际类型选择，例如 `String`、`Integer`、`Long`
 - 不要默认依赖 `ordinal()`、`name()` 或手写 TypeHandler
 - 需要返回枚举名称或展示值时，优先配合 `@PutEnumValue`
