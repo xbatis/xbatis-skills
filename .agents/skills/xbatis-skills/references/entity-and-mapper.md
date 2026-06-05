@@ -105,9 +105,14 @@ QueryChain.of(mybatisBasicMapper, SysUser.class)
 
 - 单 Mapper 模式：项目 BaseDao 继承 `BasicDaoImpl<T, ID>`
 - 多 Mapper 模式：项目 BaseDao 继承 `DaoImpl<T, ID>`
+- 业务 DAO 必须拆成接口和实现类
+- 业务 DAO 接口继承 `cn.xbatis.core.mvc.Dao<T, ID>`
+- 业务 DAO 实现类继承项目 BaseDao，并实现对应业务 DAO 接口
+- 不要让业务 DAO 接口继承 `cn.xbatis.core.mvc.IDao<T, ID>`；源码注释说明 `IDao` 是旧接口且不建议开发者使用
 - 项目 BaseDao 的 `setMapper(...)` 方法必须加当前容器框架的自动注入注解
 - `setMapper(...)` 内部调用父类 `setMapper(mapper)` 完成绑定
-- BaseDao 子类只继承项目 BaseDao，不需要也不应重复重写 `setMapper(...)`
+- 业务 DAO 实现类只继承项目 BaseDao，不需要也不应重复重写 `setMapper(...)`
+- 基础按 id、save、update 方法强烈建议保持和框架 Dao / BaseDao / 内置 Mapper 的真实方法名和签名一致
 - 业务 DAO 不建议写与 BaseDao / 内置 Mapper 重复的简单方法
 - 业务 DAO 只保留有业务语义、组合查询、事务边界或复用价值的方法
 
