@@ -90,10 +90,54 @@ public interface SysUserMapper extends MybatisMapper<SysUser> {
 
 - 查询：`get`、`list`、`exists`、`count`、`paging`、`cursor`、`mapWithKey`
 - 新增：`save`、`saveBatch`、`saveOrUpdate`、`saveModel`
-- 更新：`update`、`updateBatch`
+- 更新：`partialUpdate`、`update`、`updateBatch`
 - 删除：`deleteById`、`deleteByIds`、`delete(where)` 等
 - 原生 SQL：`execute`、`select`、`selectList`
 - 多库差异化：`dbAdapt(...)`
+
+## 精准局部修改 partialUpdate
+
+`partialUpdate(...)` 用于实体类精准（局部）修改，适合单条数据“先查询出来，再改部分字段”的场景。
+
+基础写法：
+
+```java
+SysUser sysUser = sysUserMapper.getById(id);
+
+int cnt = sysUserMapper.partialUpdate(sysUser, o -> {
+    o.setUserName(updateModel.getUserName());
+    o.setMobile(updateModel.getMobile());
+});
+```
+
+规则：
+
+- 第一个参数传已查询出的实体对象
+- 在回调里只 `set` 本次业务允许修改的字段
+- 想修改哪个字段就 `set` 哪个字段，不要把全量实体直接交给 `update(entity)`
+- 回调中 `set` 过的字段会参与更新，`setXxx(null)` 也会把字段更新为数据库 `NULL`
+
+显式置空示例：
+
+```java
+SysUser sysUser = sysUserMapper.getById(id);
+
+int cnt = sysUserMapper.partialUpdate(sysUser, o -> {
+    o.setUserName(null);
+});
+```
+
+不推荐写法：
+
+```java
+SysUser sysUser = sysUserMapper.getById(id);
+sysUser.setUserName(updateModel.getUserName());
+sysUser.setMobile(updateModel.getMobile());
+
+sysUserMapper.update(sysUser);
+```
+
+原因：这类先查后改的单条局部更新应使用 `partialUpdate(...)` 收窄更新字段，避免普通 `update(entity)` 携带不该由当前业务修改的字段。
 
 ## 单 Mapper 模式
 
