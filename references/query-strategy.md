@@ -27,6 +27,15 @@
 
 ## QueryChain 使用规则
 
+链式 DSL 的真实类名优先按本地源码确认，常见包名是：
+
+- `cn.xbatis.core.sql.executor.chain.QueryChain`
+- `cn.xbatis.core.sql.executor.chain.InsertChain`
+- `cn.xbatis.core.sql.executor.chain.UpdateChain`
+- `cn.xbatis.core.sql.executor.chain.DeleteChain`
+
+旧 README 里有时写成 `cn.xbatis.core.chain.*`，生成代码时不要照抄概念包名。
+
 默认在 DAO 内创建 `QueryChain`：
 
 - 使用 `queryChain()` / `queryChain(where)`
@@ -36,6 +45,38 @@
 - 适合“先查 A，顺带带出 B”的场景优先考虑 `@Fetch`
 - join 查询优先先 `.from(...)` 明确主表
 - join 优先使用 `leftJoin(SysUser::getRoleId, SysRole::getId)` 这类方法引用写法；第二个参数所属实体是被 join 的实体
+
+`QueryChain` 适合绝大多数查询拼装场景：
+
+- `select`
+- `from`
+- `join`
+- `where`
+- `groupBy`
+- `having`
+- `orderBy`
+- 子查询、嵌套条件、分页、游标、`mapWithKey`
+
+`returnType(...)` 放在 `get` / `list` / `paging` 等终止方法前。
+
+### 写入 Chain 能力
+
+`InsertChain` / `UpdateChain` / `DeleteChain` 适合默认 CRUD 不够用时：
+
+- `InsertChain`
+  - 支持 `insert ... values`
+  - 支持 `insert ... select`
+  - 可按项目版本确认是否支持 `onConflict`
+- `UpdateChain`
+  - 支持动态 `set`
+  - 支持函数更新，例如版本号自增
+  - 可按项目版本确认是否支持 `RETURNING`
+- `DeleteChain`
+  - 支持条件删除
+  - 可按项目版本确认是否支持 `RETURNING`
+  - 默认是物理删除，不走逻辑删除拦截
+
+写入 Chain 最终必须通过 `execute()` 执行。
 
 如果项目有 DAO 层，Service 层不要承载数据库操作 SQL 代码：
 
@@ -54,10 +95,13 @@
 - 需要字段级条件时优先使用 `@Condition`
 - 单字段映射多列时优先使用 `@Conditions`
 - 需要成组逻辑时优先使用 `@ConditionGroup`
+- 动态排序对象优先使用 `@OrderByTarget` / `@OrderBy`
 - QO 中凡是不是数据库操作字段、需要忽略的字段，优先使用 `@Ignore` 或 `@Ignores`
 - 在查询对象的 `where()` 中集中生成条件
 - 在 `where()` 中优先使用 `WhereUtil.where(this)`
 - DAO 内部优先使用 `queryChain(qo.where())`
+
+对象条件相关注解常见于 `cn.xbatis.db.annotations`。当前仓库里可核实的扩展点包括 `cn.xbatis.core.sql.ObjectConditionLifeCycle`，可在构建条件前处理 DTO 入参。
 
 适合：
 
@@ -167,6 +211,16 @@ queryChain().nested(chain -> chain.eq(SysUser::getId, id, Objects::nonNull));
 5. 返回展示对象优先用 VO
 6. 优先让框架自动 select 需要的列
 
+同一实体表参与两次查询时，按源码能力使用 `storey` 区分主表和第二张同实体表。生成自关联 join 前，必须确认关联字段真实存在。
+
+高级 join 子查询如果使用框架的 `(query, subQuery)` 或 `(query, subQuery, on)` 回调重载：
+
+- `(query, subQuery)` 适合只调整子查询 select、外层 select、排序等内容
+- `(query, subQuery, on)` 适合在自动生成的核心 `ON` 条件之外追加条件
+- 生成代码时必须确认主表字段、子查询字段和 VO 映射字段真实存在
+
+In / Exists 子查询优先使用 xbatis 的便捷子查询重载，不要手写 SQL 字符串。复杂相关子查询再考虑 `SubQuery.create()`，并先从本地源码确认真实 API。
+
 ### 返回对象
 
 Controller / API 对外返回优先使用 VO，不建议直接返回实体类：
@@ -182,6 +236,8 @@ Controller / API 入参优先保持可演进：
 - 即使当前不超过 2 个，但大概率后续会增加过滤项、分页项、排序项或业务参数，也应提前使用对象
 - Controller 接收对象后传给 Service 层，不要把多个散参继续透传到 Service / DAO
 - 查询入参优先使用 QO，修改入参优先使用 Model 或项目统一的 DTO / Model 约定
+- 新增或修改用于新增、更新的 POJO 时，优先判断能否作为 xbatis Model 直接参与 `save(Model)` / `update(Model)`
+- 能通过 Model 直接写入时，不要先把 Model / DTO 手工 copy 成实体类再调用 `save` / `update`
 
 不要为了前端展示字段污染实体类，也不要先查实体再手工 copy 成 VO；优先使用 `select(VO.class)`、`returnType(VO.class)` 和结果映射注解。
 
@@ -192,9 +248,20 @@ Controller / API 入参优先保持可演进：
 - 不要手工一个一个 `select` 列，本可直接 `select(VO.class)` 却堆大量字段
 - VO 类尽量配合 xbatis 的 `@ResultEntity`、`@NestedResultEntity`、`@NestedResultEntityField`、`@ResultCalcField` 等结果映射注解
 - 需要枚举名称时优先使用 `@PutEnumValue`
+- 需要单字段或补充值映射时，可按源码能力确认 `@ResultField` / `@PutValue`
 - VO 中凡是不是数据库操作字段、需要忽略的字段，优先使用 `@Ignore` 或 `@Ignores`
 - select 别名优先使用 getter / 字段引用形式，例如 `.select(SysUser::getId, c -> c.as(SysUser::getId))`
 - 只有字段无法自然映射或别名需要脱离现有字段体系时，才使用 `.select(SysUser::getId, c -> c.as("id"))`
+
+`@Fetch` 适合自动级联或补充字段，常见能力包括：
+
+- 源字段或列指定
+- 中间表
+- 目标实体和目标属性
+- 排序、限制条数、内存分页
+- 缓存名称
+
+只有在注解表达不清楚或性能要求特殊时，才退回显式 SQL。
 
 ### leftJoin 注意事项
 

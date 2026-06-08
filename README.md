@@ -1,4 +1,3 @@
-[//]: # ([![skills.sh]&#40;https://skills.sh/b/anthropics/skills&#41;]&#40;https://gitee.com/xbatis/xbatis-skills&#41;)
 
 # Xbatis Skills
 
@@ -9,6 +8,7 @@
 处理以下任务时，使用这份 Skill：
 
 - 新增或修改 xbatis 实体、Mapper、Service、DAO
+- 新增或修改 VO、QO、DTO、Model 等 xbatis 相关 POJO
 - 初始化或接入 Spring Boot / Solon 等 xbatis 运行环境
 - 使用 DAO、`BasicMapper`、`MybatisMapper<T>`、`QueryChain`、`UpdateChain`、`InsertChain`、`DeleteChain`
 - 实现分页、联表、VO 映射、对象转条件、对象转排序
@@ -51,11 +51,13 @@
 默认按以下项目级约束生成和审查代码：
 
 - 开发环境必须开启 xbatis POJO 安全检查，用于启动时检查 VO、Model、条件对象、排序对象的映射和注解缺口
-- Spring / Spring Boot 项目优先按当前 starter 支持的 `@XbatisPojoCheckScan` 接入；README 记录的包名是 `org.mybatis.spring.boot.autoconfigure.XbatisPojoCheckScan`，但生成前必须从当前项目依赖或本地 starter 源码确认真实包名
+- Spring / Spring Boot 项目优先按当前 starter 支持的 `@XbatisPojoCheckScan` 接入；旧 README / starter 文档记录的包名是 `org.mybatis.spring.boot.autoconfigure.XbatisPojoCheckScan`，但生成前必须从当前项目依赖或本地 starter 源码确认真实包名
 - Solon 项目优先在 `solon.yml` 的 `mybatis.<数据源 bean 名称>.pojoCheck` 下配置 `basePackages`、`modelPackages`、`resultEntityPackages`、`conditionTargetPackages`、`orderByTargetPackages`
 - POJO 安全检查扫描范围二选一：要么使用 `basePackages` 覆盖项目相关包，要么使用 `modelPackages` / `resultEntityPackages` / `conditionTargetPackages` / `orderByTargetPackages` 等细分包路径；不要同时生成两种方案
 - 测试环境和生产环境不要求默认开启安全检查；除非项目明确要求，不要为 test/prod 生成安全检查配置
 - 生成新项目骨架、接入 xbatis、生成 VO / Model / QO / OrderBy 对象时，必须同步补安全检查扫描范围
+- 新增或修改用于新增、更新的 POJO 时，优先判断能否使用 xbatis Model 直接参与 `save(Model)` / `update(Model)`，减少 DTO / Model / 实体之间的手工转换代码
+- 只有接口契约隔离、跨上下文复用、聚合字段拆装等真实需求明确存在时，才保留额外 DTO 到 Model / 实体的转换层
 - Controller 入参超过 2 个，或大概率后续会继续增加参数时，必须使用 QO、DTO、Model 等对象接收，并把对象传递到 Service 层，不要继续堆散参
 - 无特殊要求时，项目必须集成 Lombok；实体、VO、QO、DTO、Model 优先使用 Lombok 减少样板代码，并按需启用 `@FieldNameConstants` 支持字段常量引用
 
@@ -64,6 +66,8 @@
 按任务读取对应参考文件，不要一次性加载全部 references：
 
 - 处理 Spring Boot / Solon 接入、starter 依赖、数据源、启动类、`@MapperScan` 时，读取 `references/environment-setup.md`
+- 处理实体注解、Mapper 默认能力、Model 修改、精准局部修改、写入冲突策略时，读取 `references/entity-and-mapper.md`
+- 处理链式 DSL、Insert / Update / Delete Chain、对象驱动条件、结果映射注解和 `@Fetch` 时，读取 `references/query-dsl.md`
 - 处理标准查询、分页、联表、VO 返回时，读取 `references/query-strategy.md`
 - 判断项目是否使用单 Mapper 或 `BasicMapper` 时，读取 `references/mapper-modes.md`
 - 处理逻辑删除、多租户、乐观锁、动态值、对象转条件时，读取 `references/framework-features.md`
@@ -98,6 +102,7 @@
 - 标准列表查询
 - 联表 / VO 查询
 - 搜索表单 / 动态条件
+- 写入 Model / POJO 改造
 - 高复杂度报表 SQL
 - 框架特性接入
 
@@ -160,6 +165,7 @@
 - DAO 内部的 `updateChain()`
 - DAO 内部的 `insertChain()`
 - DAO 内部的 `deleteChain()`
+- Model 直接参与 `save(Model)` / `update(Model)`
 
 避免：
 
@@ -167,6 +173,7 @@
 - 在 Service / Controller 中直接创建 `InsertChain.of(...)`
 - 在 Service / Controller 中直接创建 `DeleteChain.of(...)`
 - 把 `DeleteChain` 当成逻辑删除入口
+- 本可使用 xbatis Model 直接写入时，仍新增 DTO / 实体之间的手工转换层
 
 #### 复杂 SQL
 
@@ -225,6 +232,7 @@
 
 - 创建时间字段优先使用 `@TableField(defaultValue = "{NOW}", update = false)`
 - 修改时间字段优先使用 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
+- 字段已使用 `@LogicDelete` / `@LogicDeleteTime` 等逻辑删除注解时，禁止通过 `@TableField` 配置 `defaultValue` / `updateDefaultValue` 等默认值相关属性
 - 无特殊行为的普通字段，不要为了声明列名而机械补 `@TableField("xxx")`
 - 只有在需要控制默认值、更新行为、类型处理、查询参与、非表字段等特殊语义时才补 `@TableField`
 - 非数据库表字段不要放进实体类；这类字段应放到 VO、QO、Model，并按需使用 `@Ignore` 或 `@Ignores`
@@ -285,7 +293,7 @@
 
 默认执行以下规则：
 
-- 生成或改写持久化枚举时，枚举必须实现 `cn.xbatis.core.mybatis.typeHandler.EnumSupport<T>`
+- 新增、生成或改写持久化枚举时，枚举类必须完整遵循 xbatis 枚举契约，并实现/继承（Java 代码使用 `implements`）`cn.xbatis.core.mybatis.typeHandler.EnumSupport<T>`
 - 枚举必须提供稳定的 `code` 值并实现 `getCode()`；字段类型 `T` 按数据库实际存储类型选择，例如 `String`、`Integer`、`Long`
 - 枚举必须提供 `public static Xxx of(T code)` 方法；遍历枚举按 `code` 匹配，找不到时返回 `null`
 - 示例形态：`public enum Status implements EnumSupport<Integer> { ... }`
@@ -322,7 +330,7 @@ public enum Status implements EnumSupport<Integer> {
 }
 ```
 
-生成前必须从本地 xbatis 源码确认真实包名；当前源码中 `EnumSupport` 位于 `cn.xbatis.core.mybatis.typeHandler.EnumSupport`。
+新增、修改或生成前必须从本地 xbatis 源码确认真实包名；当前源码中 `EnumSupport` 位于 `cn.xbatis.core.mybatis.typeHandler.EnumSupport`。
 
 ## QueryChain 规则
 
@@ -384,6 +392,8 @@ public enum Status implements EnumSupport<Integer> {
 - `UpdateChain`、`InsertChain`、`DeleteChain` 最终执行方法统一是 `execute()`
 - 修改操作优先使用 Model 类作为传参载体
 - Model 可以像实体类一样直接参与 `save(Model)`、`update(Model)`, xbatis 自带这些方法
+- 新增或修改用于新增、更新的 POJO 类时，优先建成或改成 xbatis Model，让 Model 直接承载可写字段
+- 能通过 Model 直接写入时，不要先把 Model / DTO 手工 copy 成实体类再调用 `save` / `update`
 - Model 中凡是不是数据库操作字段、需要忽略的字段，优先使用 `@Ignore` 或 `@Ignores`
 - 单条数据如果是“先查询出来，再改部分字段”的场景，强烈建议使用 xbatis 的 `partialUpdate(...)` 精准修改
 - 更新时缩小字段范围，只更新本次业务允许变化的字段
@@ -394,6 +404,7 @@ public enum Status implements EnumSupport<Integer> {
 - 在单 Mapper 模式下混入多 Mapper 的 Chain 创建方式
 - 在多 Mapper 模式下混入 `BasicMapper` 的 Chain 创建方式
 - 把查询实体、响应 VO 或全量实体直接作为修改入参
+- 本可使用 xbatis Model 修改方式，却新增 DTO / Model / 实体之间的转换代码
 - 因为前端传了字段就默认全部参与 update
 - 单条数据先查后改时，本可用 `partialUpdate(...)` 精准修改，却直接对查出的实体做普通 `update(entity)`
 - 创建了 `UpdateChain`、`InsertChain`、`DeleteChain` 却没有以 `execute()` 收尾
@@ -451,6 +462,8 @@ public enum Status implements EnumSupport<Integer> {
 
 优先复用框架逻辑删除能力。
 
+逻辑删除字段已使用 `@LogicDelete` / `@LogicDeleteTime` 等注解时，禁止通过 `@TableField` 的 `defaultValue` / `updateDefaultValue` 配置删除默认值或删除时间。
+
 避免：
 
 - 在普通查询里反复手工拼 `deleted = 0`
@@ -486,6 +499,7 @@ public enum Status implements EnumSupport<Integer> {
 
 - 创建时间字段优先使用 `@TableField(defaultValue = "{NOW}", update = false)`
 - 修改时间字段优先使用 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
+- 逻辑删除字段已有逻辑删除注解时，禁止补 `@TableField` 默认值配置
 
 ### 对象转条件 / 对象转排序
 
@@ -530,7 +544,7 @@ public enum Status implements EnumSupport<Integer> {
 17. 需要按值忽略条件时，不使用 predicate / boolean `when` 重载
 18. 需要括号包裹 `or` 条件时，不使用 `.nested(...)`
 19. 调用 `.or()` 后没有显式 `.and()` 切回，导致后续条件错误变成 OR
-20. 修改操作不使用 Model 类收敛入参，或更新字段范围过大
+20. 新增或修改写入 POJO 时不优先考虑 xbatis Model 修改方式，或修改操作不使用 Model 类收敛入参，或更新字段范围过大
 21. 在无特殊语义的普通字段上机械补 `@TableField("列名")`
 22. 创建时间、修改时间没有优先复用 `@TableField` 的动态默认值能力
 23. QO 已适合对象转条件，却不使用 `@ConditionTarget` 体系和 `WhereUtil.where(this)`
@@ -564,24 +578,25 @@ public enum Status implements EnumSupport<Integer> {
 14. 非搜索条件忽略是否优先使用 predicate 重载，其次 boolean `when` 重载
 15. 含 `or` 的成组条件是否使用 `.nested(...)`
 16. 使用 `.or()` 后是否已在需要时通过 `.and()` 切回
-17. 修改入参是否使用 Model 类并限制更新字段范围
+17. 新增或修改写入 POJO 时，是否优先考虑 xbatis Model 修改方式；修改入参是否使用 Model 类并限制更新字段范围
 18. join 场景是否优先使用 `.from(...)`、方法引用 join 和 `select(VO.class)`
 19. 适合“先查 A，顺带带出 B”的场景是否优先考虑 `@Fetch`
 20. 单 Mapper 模式下是否定义统一 `XbatisMapper` 并配置 `@MapperScan`
 21. 需要枚举名称时是否优先使用 `@PutEnumValue`
 22. 实体普通字段是否避免了机械 `@TableField("列名")`
 23. 创建时间、修改时间是否优先使用 `@TableField(defaultValue = "{NOW}", update = false)` 和 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
-24. QO 是否优先配合 `@ConditionTarget` 体系，并在 `where()` 中使用 `WhereUtil.where(this)`
-25. 项目 BaseDao 的 `setMapper(...)` 是否带 Spring、Solon 等容器自动注入注解，业务 DAO 子类是否避免重复重写 `setMapper(...)`
-26. 实体、QO、VO 等涉及字段引用的 xbatis 注解是否优先使用 Lombok `@FieldNameConstants` 生成的 `Fields`
-27. `.as(...)` 是否优先使用 getter / 字段引用形式，例如 `.select(SysUser::getId, c -> c.as(SysUser::getId))`
-28. VO、QO、Model 中需要忽略的非数据库操作字段是否使用了 `@Ignore` 或 `@Ignores`
-29. 实体类是否保持单一性，不包含非数据库表字段
-30. 单条数据先查后改的场景是否优先使用 `partialUpdate(...)` 精准修改
-31. `UpdateChain`、`InsertChain`、`DeleteChain` 是否最终使用 `execute()` 执行
-32. SQL 模板是否优先通过 `Methods.tpl`、`Methods.fTpl`、`Methods.cTpl` 创建
-33. 开发环境是否已经开启 xbatis POJO 安全检查，并覆盖 VO、Model、QO、排序对象所在包；test/prod 是否避免默认开启
-34. 业务 DAO 是否避免编写与 BaseDao / 内置 Mapper 重复的简单方法
+24. 逻辑删除字段已有 `@LogicDelete` / `@LogicDeleteTime` 等注解时，是否禁止了 `@TableField` 默认值配置
+25. QO 是否优先配合 `@ConditionTarget` 体系，并在 `where()` 中使用 `WhereUtil.where(this)`
+26. 项目 BaseDao 的 `setMapper(...)` 是否带 Spring、Solon 等容器自动注入注解，业务 DAO 子类是否避免重复重写 `setMapper(...)`
+27. 实体、QO、VO 等涉及字段引用的 xbatis 注解是否优先使用 Lombok `@FieldNameConstants` 生成的 `Fields`
+28. `.as(...)` 是否优先使用 getter / 字段引用形式，例如 `.select(SysUser::getId, c -> c.as(SysUser::getId))`
+29. VO、QO、Model 中需要忽略的非数据库操作字段是否使用了 `@Ignore` 或 `@Ignores`
+30. 实体类是否保持单一性，不包含非数据库表字段
+31. 单条数据先查后改的场景是否优先使用 `partialUpdate(...)` 精准修改
+32. `UpdateChain`、`InsertChain`、`DeleteChain` 是否最终使用 `execute()` 执行
+33. SQL 模板是否优先通过 `Methods.tpl`、`Methods.fTpl`、`Methods.cTpl` 创建
+34. 开发环境是否已经开启 xbatis POJO 安全检查，并覆盖 VO、Model、QO、排序对象所在包；test/prod 是否避免默认开启
+35. 业务 DAO 是否避免编写与 BaseDao / 内置 Mapper 重复的简单方法
 
 ## 任务映射
 
@@ -618,8 +633,9 @@ public enum Status implements EnumSupport<Integer> {
 1. 配置动态值
 2. 创建时间字段优先使用 `@TableField(defaultValue = "{NOW}", update = false)`
 3. 修改时间字段优先使用 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
-4. 使用 `@OnInsert`
-5. 使用 `@OnUpdate`
+4. 逻辑删除字段已有逻辑删除注解时，禁止补 `@TableField` 默认值配置
+5. 使用 `@OnInsert`
+6. 使用 `@OnUpdate`
 
 ## 结论
 
@@ -633,14 +649,14 @@ public enum Status implements EnumSupport<Integer> {
 6. 大多数业务查询使用 `QO` 对象转条件并在 DAO 内执行
 7. 按 id 查询实体或部分列用 `getById`，按 id 查单列值用 `getValueById`
 8. 更新、插入、删除链在 DAO 内使用框架方法创建
-9. 修改操作用 Model 类收敛入参并缩小更新字段范围
+9. 新增或修改写入 POJO 时优先考虑 xbatis Model 修改方式，修改操作用 Model 类收敛入参并缩小更新字段范围，减少 DTO / Model / 实体之间的转换代码
 10. 搜索查询才使用 `forSearch(true)`
 11. 适合“先查 A，顺带带出 B”的场景优先考虑 `@Fetch`，真正需要 join 时先 `.from(...)`，再用方法引用 join
 12. 条件对象优先实现 `QO` 并使用 `@ConditionTarget` 体系；`QO.where()` 优先用 `WhereUtil.where(this)`
 13. 非搜索条件忽略优先 predicate 重载，其次 boolean `when` 重载；成组 `or` 条件用 `.nested(...)`，`.or()` 后需要时用 `.and()` 切回；使用 `Methods` 风格时优先静态导入
 14. 接口返回优先 VO；后台管理 VO 可考虑继承实体，联表和展示结果优先 `select(VO.class)` / `returnType(VO.class)` 自动映射，VO 优先配合 `@ResultEntity` 等结果映射注解
 15. 需要枚举名称时优先使用 `@PutEnumValue`
-16. 实体普通字段默认不写 `@TableField`；创建时间优先 `@TableField(defaultValue = "{NOW}", update = false)`，修改时间优先 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
+16. 实体普通字段默认不写 `@TableField`；创建时间优先 `@TableField(defaultValue = "{NOW}", update = false)`，修改时间优先 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`；逻辑删除字段已有逻辑删除注解时，禁止补 `@TableField` 默认值配置
 17. 实体类只承载数据库表字段，禁止混入非数据库表字段；VO、QO、Model 中需要忽略的非数据库操作字段优先使用 `@Ignore` 或 `@Ignores`
 18. 无特殊要求时项目必须集成 Lombok，并优先使用 `@FieldNameConstants` 和 `SysUser.Fields.id` 这类字段引用
 19. `.as(...)` 优先使用 getter / 字段引用形式，例如 `.select(SysUser::getId, c -> c.as(SysUser::getId))`；只有特殊情况才使用 `.as("id")`

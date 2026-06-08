@@ -14,10 +14,42 @@
 1. 先识别当前运行环境：Spring Boot 2 / 3 / 4，还是 Solon
 2. 已有项目优先跟随现有环境、已有 parent、已有 starter、已有数据源方案
 3. 不要在同一模块里同时生成 Spring Boot 和 Solon 两套接入代码
-4. 版本号优先以当前本地 xbatis 源码 README 或官网对应章节为准，不要凭空硬编码旧版本
+4. 版本号优先以当前本地 xbatis 源码 README、官方文档或官网对应章节为准，不要凭空硬编码旧版本
 5. 先把容器、数据源、Mapper 扫描接起来，再生成实体、Mapper、DAO、Service
 6. 开发环境必须开启 xbatis POJO 安全检查；测试和生产环境不要求默认开启；不知道真实注解包名或配置项时，先查当前 starter 依赖和本地源码
 7. 无特殊要求时，项目必须集成 Lombok；实体、VO、QO、DTO、Model 优先使用 Lombok，字段常量按需使用 `@FieldNameConstants`
+
+## 模块总览
+
+分析本地 xbatis 源码时，常见模块职责如下：
+
+- `xbatis-annotation`：注解、分页字段、监听注解
+- `xbatis-sql-api`：SQL 抽象接口与调用解析
+- `xbatis-sql-api-impl`：数据库函数实现，核心入口是 `db.sql.api.impl.cmd.Methods`
+- `xbatis-core`：Mapper、链式 DSL、分页、租户、逻辑删除、MVC 支撑
+- `xbatis-bom` / `xbatis-parent`：依赖管理与父 POM
+
+## 全局配置
+
+真实类名以本地 xbatis 源码为准，常见入口是 `cn.xbatis.core.XbatisGlobalConfig`。
+一般不建议主动调用这些配置。
+
+配置点：
+
+- `setTableUnderline(...)` / `setColumnUnderline(...)`：下划线策略
+- `setDatabaseCaseRule(...)`：数据库大小写规则
+- `setDynamicValue(...)`：注册动态默认值
+- `setLogicDeleteInterceptor(...)` / `setLogicDeleteSwitch(...)`：逻辑删除行为
+- `setGlobalOnInsertListener(...)` / `setGlobalOnUpdateListener(...)`：全局写入监听
+- `setPagingProcessor(...)`：按数据库定制分页
+- `addMapperMethodInterceptor(...)`：扩展 Mapper 方法拦截
+
+内置动态值以源码为准，常见值包括：
+
+- `{BLANK}`
+- `{EMPTY}`
+- `{NOW}`
+- `{TODAY}`
 
 ## 版本选择
 
@@ -33,6 +65,11 @@
 - 本地 `xbatis-source/README.md`
 - 本地 `xbatis-source/README.zh-CN.md`
 - 官方站对应章节：springboot2 / springboot3 / springboot4 / solon
+
+实用接入约定：
+
+- 搜索接口优先显式声明 `mybatis.configuration.databaseId`，减少数据库自动识别开销
+- AI 生成新项目时，优先同时生成 Mapper、实体、VO、条件 DTO 和开发环境安全检查配置，避免只生成半套结构
 
 ## Spring Boot 接入
 
@@ -64,6 +101,9 @@ Spring Boot 项目优先使用：
 补充规则：
 
 - `xbatis.version` 按当前 Spring Boot 主版本选择对应版本线
+- Spring Boot 2 通常使用 `xbatis-spring-boot-starter`
+- Spring Boot 3 通常使用 `xbatis-spring-boot3-starter`
+- Spring Boot 4 通常使用 `xbatis-spring-boot4-starter`
 - JDBC 驱动必须补，例如 `mysql-connector-j`
 - 连接池优先复用 Spring Boot 默认或项目现有方案；不要无故再引入另一套数据源实现
 - 无特殊要求时必须补 Lombok 依赖；版本优先交给 Spring Boot parent 或项目依赖管理，不要凭空硬编码
@@ -130,7 +170,7 @@ Spring / Spring Boot 项目优先使用当前 starter 支持的 `@XbatisPojoChec
 @Profile("dev")
 @Configuration
 @XbatisPojoCheckScan(
-        basePackages = "com.example"
+    basePackages = "com.example"
 )
 public class XbatisSafeCheckConfig {
 }
@@ -142,10 +182,10 @@ public class XbatisSafeCheckConfig {
 @Profile("dev")
 @Configuration
 @XbatisPojoCheckScan(
-        modelPackages = "com.example.model",
-        resultEntityPackages = "com.example.vo",
-        conditionTargetPackages = "com.example.qo",
-        orderByTargetPackages = "com.example.qo"
+    modelPackages = "com.example.model",
+    resultEntityPackages = "com.example.vo",
+    conditionTargetPackages = "com.example.qo",
+    orderByTargetPackages = "com.example.qo"
 )
 public class XbatisSafeCheckConfig {
 }
@@ -153,7 +193,7 @@ public class XbatisSafeCheckConfig {
 
 注意：
 
-- README 记录的注解包名是 `org.mybatis.spring.boot.autoconfigure.XbatisPojoCheckScan`
+- 旧 README / starter 文档记录的注解包名是 `org.mybatis.spring.boot.autoconfigure.XbatisPojoCheckScan`
 - 当前 xbatis core 源码里没有该类型；生成 import 前必须从当前项目依赖或本地 starter 源码确认真实包名
 - 新项目默认只生成 dev profile 下的安全检查配置；测试和生产环境不要求默认开启
 - `basePackages` 和 `modelPackages` / `resultEntityPackages` / `conditionTargetPackages` / `orderByTargetPackages` 是二选一的扫描方案，不要同时生成

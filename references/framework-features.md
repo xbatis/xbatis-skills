@@ -11,6 +11,12 @@
 
 ## 逻辑删除
 
+真实类型以本地源码为准，常见类型：
+
+- 注解：`@LogicDelete`、`@LogicDeleteTime`
+- 开关：`cn.xbatis.core.logicDelete.LogicDeleteSwitch`
+- 工具：`cn.xbatis.core.logicDelete.LogicDeleteUtil`
+
 要点：
 
 - 使用逻辑删除注解，而不是手工写删除标记条件
@@ -25,8 +31,14 @@ Agent 规则：
 2. 如果需求是“查已删除数据”，先检查是否应局部关闭逻辑删除
 3. 不要在普通查询里反复手工拼 `deleted = 0`
 4. 不要把 `deleteChain()` 当成逻辑删除入口；需要逻辑删除语义时优先使用框架删除方法
+5. 实体字段已有 `@LogicDelete` / `@LogicDeleteTime` 等逻辑删除注解时，禁止通过 `@TableField` 配置 `defaultValue` / `updateDefaultValue` 等默认值相关属性
 
 ## 多租户
+
+真实类型以本地源码为准，常见类型：
+
+- 注解：`cn.xbatis.db.annotations.TenantId`
+- 上下文：`cn.xbatis.core.tenant.TenantContext`
 
 要点：
 
@@ -42,7 +54,19 @@ Agent 规则：
 3. 不要在业务代码里遍地补 `tenant_id`
 4. 如果项目通过 `ThreadLocal` 提供租户值，保持现有上下文传递方式
 
+## 动态数据源
+
+xbatis 生态中可能通过外部能力支持动态数据源，例如 `cn.xbatis:xbatis-datasource-routing`。这类能力使用前必须确认项目依赖已接入。
+
+常见能力：
+
+- `@DS("master")`
+- 主从、分组、连接池与配置解密
+- 事务切换时需要注意传播行为
+
 ## 乐观锁
+
+真实注解以本地源码为准，常见注解是 `cn.xbatis.db.annotations.Version`。
 
 要点：
 
@@ -70,9 +94,10 @@ Agent 规则：
 2. 不要在 Controller / Service 层重复填这些审计字段
 3. 创建时间字段优先使用 `@TableField(defaultValue = "{NOW}", update = false)`
 4. 修改时间字段优先使用 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
-5. 普通字段无特殊语义时，不要为了声明列名机械补 `@TableField`
-6. 无特殊要求时项目必须集成 Lombok，并在实体类上优先使用 `@FieldNameConstants`
-7. 实体类只保留数据库表字段，禁止混入非数据库表字段
+5. 逻辑删除字段已有逻辑删除注解时，禁止补 `@TableField` 默认值配置
+6. 普通字段无特殊语义时，不要为了声明列名机械补 `@TableField`
+7. 无特殊要求时项目必须集成 Lombok，并在实体类上优先使用 `@FieldNameConstants`
+8. 实体类只保留数据库表字段，禁止混入非数据库表字段
 
 ## 结果映射 / 枚举展示
 
@@ -80,27 +105,29 @@ Agent 规则：
 
 1. 返回 VO 时，优先让框架自动映射，而不是手工 copy
 2. 需要返回枚举名称时，优先使用 `@PutEnumValue`
-3. 持久化枚举必须实现 `cn.xbatis.core.mybatis.typeHandler.EnumSupport<T>`，通过 `getCode()` 提供数据库存储值
-4. 生成持久化枚举时必须提供 `of(T code)` 静态方法，按 `code` 匹配，找不到时返回 `null`
+3. 新增、生成或改写持久化枚举类必须实现/继承（Java 代码使用 `implements`）`cn.xbatis.core.mybatis.typeHandler.EnumSupport<T>`，通过 `getCode()` 提供数据库存储值
+4. 新增、生成或改写持久化枚举时必须提供 `of(T code)` 静态方法，按 `code` 匹配，找不到时返回 `null`
 5. 枚举字段类型 `T` 按数据库实际存储类型选择，不要默认使用 `ordinal()` 或 `name()`
 6. 不要为了展示字段把实体类硬改成接口响应模型
 7. 实体类注解只能写在实体类上，禁止写在 VO、DTO、QO、Model 等其他类上
-7. VO 优先使用真实存在的结果映射注解，例如 `@ResultEntity`、`@NestedResultEntity`、`@NestedResultEntityField`、`@ResultCalcField`
-8. 注解里只要有字段依赖，优先使用 Lombok `@FieldNameConstants` 生成的 `Fields` 常量，例如 `SysUser.Fields.id`
-9. VO 中凡是不是数据库操作字段、需要忽略的字段，优先使用 `@Ignore` 或 `@Ignores`
+8. VO 优先使用真实存在的结果映射注解，例如 `@ResultEntity`、`@NestedResultEntity`、`@NestedResultEntityField`、`@ResultCalcField`
+9. 注解里只要有字段依赖，优先使用 Lombok `@FieldNameConstants` 生成的 `Fields` 常量，例如 `SysUser.Fields.id`
+10. VO 中凡是不是数据库操作字段、需要忽略的字段，优先使用 `@Ignore` 或 `@Ignores`
 
 ## 修改入参 / 更新字段范围
 
 Agent 规则：
 
-1. 修改操作优先使用 Model 类作为传参载体
-2. Model 可以像实体类一样直接参与 `save`、`update`
-3. 根据接口语义缩小允许修改的字段范围
-4. 更新时只更新本次业务真正允许变化的字段
-5. 不要把查询实体、响应 VO 或全量实体直接作为修改入参使用
-6. 不要因为前端传了字段就默认全部参与 update
-7. Model 中凡是不是数据库操作字段、需要忽略的字段，优先使用 `@Ignore` 或 `@Ignores`
-8. 单条数据如果是“先查询出来，再改部分字段”的场景，优先使用 `partialUpdate(...)` 精准修改
+1. 新增或修改用于新增、更新的 POJO 时，优先判断是否应作为 xbatis Model 使用
+2. 修改操作优先使用 Model 类作为传参载体
+3. Model 可以像实体类一样直接参与 `save`、`update`
+4. 能通过 Model 直接写入时，不要先把 Model / DTO 手工 copy 成实体类再调用 `save` / `update`
+5. 根据接口语义缩小允许修改的字段范围
+6. 更新时只更新本次业务真正允许变化的字段
+7. 不要把查询实体、响应 VO 或全量实体直接作为修改入参使用
+8. 不要因为前端传了字段就默认全部参与 update
+9. Model 中凡是不是数据库操作字段、需要忽略的字段，优先使用 `@Ignore` 或 `@Ignores`
+10. 单条数据如果是“先查询出来，再改部分字段”的场景，优先使用 `partialUpdate(...)` 精准修改
 
 ## 对象转条件 / 对象转排序
 
@@ -133,3 +160,19 @@ Agent 规则：
 18. 使用 `Methods` 风格时，优先静态导入所需方法
 19. 方法嵌套优先写成 `eq(gt(...))` 这类形式，避免混用多种调用风格
 20. QO 中凡是不是数据库操作字段、需要忽略的字段，优先使用 `@Ignore` 或 `@Ignores`
+
+## 分表
+
+常见类型以本地源码为准：
+
+- `@SplitTable`
+- `@SplitTableKey`
+- `TableSplitter`
+
+Agent 规则：
+
+1. 分表实体必须确认分表键字段和分表策略真实存在
+2. 条件中必须带上分表键，否则无法定位真实表
+3. `TableSplitter#support(Class<?>)` 用于声明支持的分片键类型
+4. `TableSplitter#split(String, Object)` 用于计算真实表名
+5. 链式查询和更新与普通实体基本一致，但不能遗漏分表键条件

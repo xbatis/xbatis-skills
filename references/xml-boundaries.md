@@ -132,6 +132,52 @@
 
 - 在单 Mapper 项目里为了写 XML，又新建每实体一个 Mapper
 
+## XML 整合
+
+单 Mapper 模式下，可通过 `withSqlSession(...)` 调用 XML：
+
+- 命名空间通常是统一 `BasicMapper` 子接口
+- statement 命名可按 `EntityName:method`
+- 自定义 SQL、XML namespace 和调用方式必须围绕项目当前 Mapper 模式设计
+
+适合场景：
+
+- 已有复杂 XML 资产
+- 特殊 SQL 很难用 DSL 表达
+- 需要和现有 MyBatis 语句直接复用
+
+## 分页与性能
+
+分页类型和 API 以本地源码为准，常见分页类型是 `cn.xbatis.core.mybatis.mapper.context.Pager`。
+
+建议：
+
+- 用 `Pager.of(pageNo, pageSize)` 驱动分页
+- 默认信任框架分页优化能力
+- 遇到特殊数据库分页语法，再通过 `XbatisGlobalConfig.setPagingProcessor(...)` 定制
+
+框架可能自动优化：
+
+- `COUNT(*)`
+- 冗余 `LEFT JOIN`
+- 冗余 `ORDER BY`
+
+1 对多分页 join 要特别检查分页优化是否适合当前 SQL。
+
+## 代码生成与安全检查
+
+`GeneratorConfig`、`org.mybatis.spring.boot.autoconfigure.XbatisPojoCheckScan` 等能力如果只在 README 或外部 starter 文档出现，使用时要区分：
+
+- 可以把它们当成 xbatis 生态里的接入约定
+- 不能把它们当成当前 core 仓库源码已存在的类型
+
+AI 生成代码时：
+
+- 开发环境必须启用 POJO 安全检查；测试和生产环境不要求默认开启
+- Spring / Spring Boot 优先使用当前 starter 支持的 `@XbatisPojoCheckScan`，生成 import 前先确认真实包名
+- Solon 优先在开发环境配置的 `mybatis.<beanName>.pojoCheck` 下声明扫描包
+- 日志排查时可按项目日志体系开启 `cn.xbatis` 的 `trace`
+
 ## 代码审查时如何判断 XML 是否合理
 
 审查时，先问四个问题：

@@ -60,7 +60,8 @@
 - 实体普通字段没有机械补 `@TableField("列名")`
 - 创建时间字段优先使用 `@TableField(defaultValue = "{NOW}", update = false)`
 - 修改时间字段优先使用 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
-- 持久化枚举实现 `cn.xbatis.core.mybatis.typeHandler.EnumSupport<T>`，并提供稳定的 `getCode()` 和找不到返回 `null` 的 `of(T code)`
+- 逻辑删除字段已有 `@LogicDelete` / `@LogicDeleteTime` 等注解时，禁止出现 `@TableField` 默认值配置
+- 新增、生成或改写持久化枚举类实现/继承（Java 代码使用 `implements`）`cn.xbatis.core.mybatis.typeHandler.EnumSupport<T>`，并提供稳定的 `getCode()` 和找不到返回 `null` 的 `of(T code)`
 - 无特殊要求时项目已集成 Lombok，实体或条件对象优先使用 `@FieldNameConstants`
 - 条件对象优先使用 `@ConditionTarget` 体系，并在 `where()` 中使用 `WhereUtil.where(this)`
 - 项目 BaseDao 的 `setMapper(...)` 带 Spring、Solon 等容器自动注入注解，业务 DAO 子类不重复重写 `setMapper(...)`
@@ -69,6 +70,7 @@
 - 复杂表达先尝试 SQL 模板，再考虑 XML
 - Mapper 组织方式与项目当前的单 Mapper / 多 Mapper 模式一致
 - 单 Mapper 模式下没有主动调用 `XbatisGlobalConfig.setSingleMapperClass(...)`
+- 实体注解能力和 Mapper 默认方法已按 `references/entity-and-mapper.md` 核对，没有凭记忆猜 API
 - 不知道类路径、真实类名、方法名、注解包名或泛型签名时，先基于本地 xbatis 源码确认，没有凭空猜测
 
 ### 风险信号
@@ -95,10 +97,11 @@
 - 联表返回手工一个一个 `select` 列，本可直接 `select(VO.class)` 却堆大量字段
 - 普通字段明明不需要特殊语义，却机械补满 `@TableField("列名")`
 - 创建时间、修改时间没有复用 `@TableField` 的动态默认值能力
+- 逻辑删除字段已有逻辑删除注解，却又用 `@TableField` 默认值配置删除状态或删除时间
 - 项目已适合对象转条件，却没用 `@ConditionTarget` 体系，或 `where()` 没有优先使用 `WhereUtil.where(this)`
 - DAO 注入仍然以构造方法传 Mapper 为主，或每个业务 DAO 子类重复重写 `setMapper(...)`
 - 项目 BaseDao 的 `setMapper(...)` 缺少当前容器框架的自动注入注解
-- 持久化枚举没有实现 `EnumSupport<T>`，缺少 `of(T code)`，或错误依赖 `ordinal()` / `name()` 作为存储值
+- 新增、生成或改写持久化枚举类没有实现/继承（Java 代码使用 `implements`）`EnumSupport<T>`，缺少 `of(T code)`，或错误依赖 `ordinal()` / `name()` 作为存储值
 - xbatis 注解里继续写字符串字段名，本可使用 `SysUser.Fields.id`
 - VO、QO、Model 中存在非数据库操作字段，却没有用 `@Ignore` 或 `@Ignores`
 - 实体类混入非数据库表字段
@@ -146,6 +149,7 @@
 - Chain 是否与当前单 Mapper / 多 Mapper 模式一致
 - DAO 层是否有业务 DAO 接口，且接口继承 `Dao<T, ID>` 而不是 `IDao<T, ID>`
 - 业务 DAO 实现类是否继承项目 BaseDao 并实现对应接口
+- 新增或修改写入 POJO 时，是否优先考虑 xbatis Model 修改方式，减少 DTO / Model / 实体之间的转换代码
 - 修改操作是否使用 Model 类作为传参载体
 - Model 是否允许直接参与 `save`、`update`
 - update 字段范围是否只覆盖本次业务允许变化的字段
@@ -163,6 +167,7 @@
 - 多 Mapper 模式下绕过 DAO 直接依赖具体 Mapper
 - 业务 DAO 没有接口，或接口继承 `IDao<T, ID>` 而不是 `Dao<T, ID>`
 - 把查询实体、响应 VO 或全量实体直接作为修改入参
+- 本可使用 xbatis Model 直接写入，却新增 DTO / Model / 实体之间的转换代码
 - 因为前端传了字段就默认全部参与 update
 - 项目已有统一 BaseDao 注入规范，却继续使用构造方法传 Mapper，或每个业务 DAO 子类重复重写 `setMapper(...)`
 - 把不参与数据库操作的 Model 字段直接带进 save / update 语义
@@ -293,12 +298,14 @@
 检查：
 
 - 项目如果启用了逻辑删除，当前查询是否正确复用框架能力
+- 实体逻辑删除字段如果已有 `@LogicDelete` / `@LogicDeleteTime` 等注解，是否禁止了 `@TableField` 默认值配置
 
 重点风险：
 
 - 手工写 `deleted = 0`
 - 使用 `DeleteChain` 但误以为会触发逻辑删除
 - 本应走逻辑删除语义的路径直接使用 `deleteChain()`
+- 逻辑删除字段已有逻辑删除注解时仍出现 `@TableField(defaultValue = ...)` / `updateDefaultValue`
 
 ### 多租户
 
@@ -332,6 +339,7 @@
 - 创建时间、修改时间、操作人是否复用框架动态值体系
 - 创建时间是否优先使用 `@TableField(defaultValue = "{NOW}", update = false)`
 - 修改时间是否优先使用 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
+- 逻辑删除字段已有逻辑删除注解时，是否禁止了 `@TableField` 默认值配置
 - 普通字段是否避免机械补 `@TableField("列名")`
 - 实体类是否保持只承载数据库表字段
 
@@ -444,9 +452,9 @@
 7. 非搜索条件忽略优先 predicate 重载，其次 boolean `when` 重载；使用 `Methods` 风格时优先静态导入
 8. 成组 `or` 条件走 `.nested(...)`，`.or()` 后需要时用 `.and()` 切回
 9. 写入 Chain 在 DAO 内通过框架方法创建
-10. 修改操作优先用 Model 类收敛入参并缩小更新字段范围，Model 可直接参与 `save`、`update`
+10. 新增或修改写入 POJO 时优先考虑 xbatis Model 修改方式；修改操作用 Model 类收敛入参并缩小更新字段范围，Model 可直接参与 `save`、`update`
 11. 接口返回优先 VO，联表结果优先 `select(VO.class)` / `returnType(VO.class)`，VO 优先配合 `@ResultEntity` 等结果映射注解，需要枚举名称时优先 `@PutEnumValue`
-12. 实体普通字段默认不机械写 `@TableField`；创建时间、修改时间优先复用 `@TableField` 动态默认值能力
+12. 实体普通字段默认不机械写 `@TableField`；创建时间、修改时间优先复用 `@TableField` 动态默认值能力；逻辑删除字段已有逻辑删除注解时禁止 `@TableField` 默认值配置
 13. 条件对象优先实现 `QO` 并配合 `@ConditionTarget` 体系；`where()` 优先使用 `WhereUtil.where(this)`
 14. VO、QO、Model 中非数据库操作字段优先使用 `@Ignore` / `@Ignores`
 15. 无特殊要求时项目集成 Lombok；xbatis 注解里涉及字段引用时优先使用 `@FieldNameConstants` 生成的 `Fields` 常量；select 别名优先使用 getter / 字段引用形式
@@ -459,7 +467,7 @@
 22. DAO 注入收敛在项目 BaseDao 的 `setMapper(...)`，并配合 Spring、Solon 等容器自动注入注解完成装配；业务 DAO 实现类不重复重写
 23. 实体类只承载数据库表字段，保持单一性
 24. 实体类注解只能写在实体类上
-25. 持久化枚举实现 `EnumSupport<T>` 并通过 `getCode()` 提供数据库存储值，同时提供找不到返回 `null` 的 `of(T code)`
+25. 新增、生成或改写持久化枚举类实现/继承（Java 代码使用 `implements`）`EnumSupport<T>`，并通过 `getCode()` 提供数据库存储值，同时提供找不到返回 `null` 的 `of(T code)`
 26. 不知道类路径或类名时，先查本地 xbatis 源码，不凭空猜测
 27. 开发环境开启 xbatis POJO 安全检查，并覆盖 VO、Model、QO、排序对象所在包；`basePackages` 和细分包路径二选一；测试和生产环境不默认开启
 28. 业务 DAO 不写和 BaseDao / 内置 Mapper 重复的简单方法
