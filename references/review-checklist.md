@@ -39,7 +39,7 @@
 
 ### 通过信号
 
-- 开启 xbatis 任务后，先从 `https://github.com/xbatis/xbatis` 或 `https://gitee.com/xbatis/xbatis` 下载了 xbatis 源码，并基于本地源码分析用法
+- 开启 xbatis 任务后，先从 `https://github.com/xbatis/xbatis` 或 `https://gitee.com/xbatis/xbatis` 下载了 xbatis 源码，并基于本地源码分析用法；本地目录有就不要执行下载
 - 简单 CRUD 使用 DAO / 内置 Mapper 方法
 - 默认有 DAO 层，Service 不直接创建 Chain
 - 单 Mapper 项目 BaseDao 继承 `BasicDaoImpl<T, ID>`
@@ -389,7 +389,7 @@
 - 单 Mapper 模式下是否存在统一 `XbatisMapper extends BasicMapper`，以及 `@MapperScan` 是否与该模式一致
 - 单 Mapper 模式下是否避免主动调用 `XbatisGlobalConfig.setSingleMapperClass(...)`
 - 有 DAO 层时，事务是否强烈推荐放在 DAO 方法上
-- 是否已经先下载并分析本地 xbatis 源码
+- 是否已经先下载并分析本地 xbatis 源码；本地目录有就不要执行下载
 - 是否对齐项目当前 VO、分页、条件对象、动态值规则
 - 项目是否统一推荐 Lombok `@FieldNameConstants`
 - xbatis 注解中的字段依赖是否优先使用 `Fields`

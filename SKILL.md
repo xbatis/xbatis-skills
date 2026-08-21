@@ -83,7 +83,7 @@ description: 在使用 xbatis 的 Java 项目中实现、改写、审查或优�
 
 启用 xbatis 任务时，先做这件事：
 
-- 第一件事就是从 GitHub / Gitee 下载 xbatis/starter 源码到本地目录
+- 第一件事就是从 GitHub / Gitee 下载 xbatis/starter 源码到本地目录；本地目录有就不要执行下载
 - GitHub: `https://github.com/xbatis/xbatis`
 - Gitee: `https://gitee.com/xbatis/xbatis`
 - springboot starter GitHub: `https://github.com/xbatis/xbatis-spring-boot-parent`
@@ -645,7 +645,7 @@ public enum Status implements EnumSupport<Integer> {
 
 始终记住这些规则：
 
-1. 开启 xbatis 时，第一件事就是从 GitHub / Gitee 下载 xbatis 源码到本地目录
+1. 开启 xbatis 时，第一件事就是从 GitHub / Gitee 下载 xbatis 源码到本地目录；本地目录有就不要执行下载
 2. 后续生成、改写、审查时，优先从本地源码目录分析真实用法
 3. 新项目优先单 Mapper，并默认生成 DAO
 4. 先按 Spring / Solon 等环境创建项目 BaseDao

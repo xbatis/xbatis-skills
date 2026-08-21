@@ -15,7 +15,7 @@
 
 - `@Table`
   - 定义表名、`schema`
-  - 可设置列名规则和数据库大小写规则
+  - 可设置列名规则和数据库大小写规则（推荐默认即可，不需要配置）
 - `@TableId`
   - 支持自增、生成器、SQL 生成等主键策略
   - 可按数据库类型差异化配置
@@ -40,6 +40,111 @@
 
 - `cn.xbatis.listener.annotations.OnInsert`
 - `cn.xbatis.listener.annotations.OnUpdate`
+
+## 其他常用注解
+
+以下注解同样常见于 `cn.xbatis.db.annotations`，但不要都当成实体字段注解使用。生成或审查代码时先按用途区分实体、Model、QO、排序对象和 VO。
+
+### Model 与忽略字段
+
+- `@ModelEntityField`
+  - 用在 Model 字段上，用于 Model 字段名和实体属性名不一致的场景
+  - 可配置 `forceUpdate` 强制参与更新，或 `ignoreDefaultValue` 不继承实体默认值规则
+  - Model 字段和实体字段同名时不需要机械补充
+- `@Ignore`
+  - 用在 VO、QO、DTO、Model 等 POJO 字段上，表示该字段不参与 xbatis 处理
+  - 实体类应只保留数据库表字段，不要靠 `@Ignore` 长期容纳展示字段或业务临时字段
+- `@Ignores`
+  - 用在 VO、QO、DTO、Model 等 POJO 类上，通过字段名数组声明需要忽略的字段
+  - 适合集中声明多个忽略字段；单个字段优先直接在字段上使用 `@Ignore`
+
+### 对象条件与排序
+
+- `@ConditionTarget`
+  - 用在查询条件对象类上，声明条件默认作用的实体类型
+  - 可配置 `storey` 区分同实体多层映射，可配置 `logic` 控制默认 AND / OR 组合
+- `@Condition`
+  - 用在条件对象字段上，声明 EQ、NE、IN、LIKE、BETWEEN、NULL 等条件类型
+  - 字段名不一致时配置 `property`；涉及字段引用时优先使用 Lombok `@FieldNameConstants` 生成的 `Fields` 常量
+  - LIKE 场景按需配置 `likeMode`，日期结束时间按需配置 `toEndDayTime`
+  - 可配置 `defaultValue`、`cast`，但不要用它替代业务层必须显式校验的入参规则
+- `@Conditions`
+  - `@Condition` 的重复注解容器，用于一个入参字段映射多个条件
+  - 典型场景是关键词同时匹配多个列
+- `@ConditionGroup` / `@ConditionGroups`
+  - 用在条件对象类上，将多个字段组织成一组条件并指定组内逻辑
+  - 适合需要括号语义的 OR / AND 组合，不要在 Service 层散落手工拼 where
+- `@OrderByTarget`
+  - 用在排序对象类上，声明排序默认作用的实体类型
+  - `strict = true` 时只匹配带排序注解的字段，适合对外排序参数需要白名单控制的接口
+- `@OrderBy`
+  - 用在排序对象字段上，将该字段映射到实体属性排序
+  - 字段顺序影响排序优先级，生成排序对象时要保持声明顺序有业务含义
+- `@OrderByColumn`
+  - 用在排序对象字段上，直接指定列名排序
+  - 只有实体属性映射不够表达时才使用，不要优先写硬编码列名
+- `@OrderByAsField`
+  - 用于 `.as(Entity::getXxx)` 这类 select 别名字段的排序映射
+  - VO / 别名排序优先使用字段引用，不要默认退回字符串别名
+
+### VO 结果映射
+
+- `@ResultEntity`
+  - 用在 VO 类上，声明 VO 与实体的结果映射关系
+  - VO 和实体字段同名时优先靠它自动 select / 自动映射
+  - 多表或同实体多层映射时按需配置 `storey`
+- `@ResultEntityField`
+  - 用在 VO 字段或 getter 上，解决 VO 字段与实体属性命名不一致或字段冲突
+  - 推荐优先于 `@NestedResultEntityField` 使用
+- `@ResultField`
+  - 用在 VO 字段或 getter 上，表示该字段来自非表真实列，例如聚合列、计算列或自定义 select 别名
+  - 可按需配置 `jdbcType`、`typeHandler`
+- `@ResultCalcField`
+  - 用在 VO 字段或 getter 上，声明 count、sum、max、min 等计算列
+  - 聚合查询优先用它表达结果列，不要为了一个聚合字段直接退回 XML
+- `@NestedResultEntity`
+  - 用在 VO 嵌套对象字段或 getter 上，声明嵌套对象对应的实体映射
+  - 多层嵌套结果再使用，不要把简单扁平 VO 复杂化
+- `@NestedResultEntityField`
+  - 用在嵌套 VO 字段或 getter 上，解决嵌套对象字段名不一致
+  - 源码注释推荐优先使用更强的 `@ResultEntityField`
+- `@Fetch`
+  - 用在 VO 字段或 getter 上，用于自动级联或补充字段
+  - 支持源字段 / 列、目标实体、目标属性、中间表、排序、limit、内存 limit、缓存、逻辑删除策略等能力
+  - 适合“查询 A 顺带带出 B”的场景，先考虑它再考虑 join
+- `@PutEnumValue`
+  - 用在 VO 字段或 getter 上，根据源实体枚举 code 填充枚举展示值
+  - 可配置 `code`、`value`、`required`、`defaultValue`
+- `@PutValue`
+  - 用在 VO 字段或 getter 上，通过指定 factory 静态方法补充值，并带 session 级缓存语义
+  - 只在确实需要外部工厂换算或补值时使用，不要替代普通字段映射
+- `@CreatedEvent`
+  - 用在 VO 类上，在 VO 创建后调用指定类的 `onCreatedEvent` 静态方法
+  - 适合结果对象创建后的集中补充处理，不要把数据库查询条件或写入逻辑放进去
+- `@TypeHandler`
+  - 用在 VO 类或字段上，为 VO 结果字段指定自定义 MyBatis TypeHandler
+  - 实体字段类型处理优先使用 `@TableField(typeHandler = ...)` 或项目既有类型处理规范
+
+### 分表与分页辅助
+
+- `@SplitTable`
+  - 用在分表实体类上，指定 `TableSplitter` 实现
+  - `strict` 控制跨分区行为，生成前必须确认项目分表策略和分表键
+- `@SplitTableKey`
+  - 用在分表实体字段上，标记分表键
+  - 查询、更新、删除分表实体时必须确保条件中带分表键
+- `@Paging`
+  - 用在 XML Mapper 方法上，要求参数和返回值符合 `Pager` 约定
+  - 只在项目确实使用 XML 分页方法时考虑；常规分页优先使用 `paging(Pager)`
+
+### DDL 与兼容注解
+
+- `@ColumnDefinition`
+  - 用于列 DDL 元数据，例如长度、唯一性、nullable、precision、scale、definition、comment
+  - 只有项目使用 xbatis 自动建表 / DDL 能力时才补，不要为了普通 ORM 映射机械添加
+- `@ForeignKey`
+  - 源码中已标记 `@Deprecated`
+  - 不要在新代码中主动生成；遇到旧代码时按兼容存量处理
 
 ## 枚举约定
 
