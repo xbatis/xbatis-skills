@@ -26,7 +26,7 @@ README 里有时写成 `cn.xbatis.core.chain.*`，生成代码时不要照抄那
 
 生成代码时优先使用这些约定：
 
-- 搜索接口默认 `.forSearch(true)`，自动忽略 `null`、空字符串并做 `trim`
+- 搜索接口默认 `.forSearch(true)`，自动忽略 `null`、空字符串并做 `trim`，另外强烈建议放在querychain的第一个调用行
 - 或直接使用条件重载：`eq(field, value, Objects::nonNull)`
 - `returnType(...)` 放在 `get` / `list` / `paging` 前
 - 对当前实体的简单查询尽量用省略写法

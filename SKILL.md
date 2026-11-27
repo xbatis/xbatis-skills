@@ -440,7 +440,7 @@ license: Apache-2.0
 2. 一看到动态查询就写 XML
 3. 在 Service 层拼 SQL 片段
 4. 自己实现分页而不用框架分页
-5. 在搜索查询中忽略 `forSearch(true)` 与空值忽略能力
+5. 在搜索查询中不使用 `forSearch(true)` 与空值忽略能力
 6. 明明适合 VO 自动映射却手工转换
 7. 不看项目现有风格，直接生成另一套 ORM 写法
 8. 在逻辑删除、多租户、乐观锁场景下手工编码条件
@@ -536,7 +536,7 @@ license: Apache-2.0
 8. 更新、插入、删除链在 DAO 内使用框架方法创建
 9. 新增或修改写入 POJO 时优先考虑 xbatis Model 修改方式，修改操作用 Model 类收敛入参并缩小更新字段范围，减少 DTO / Model /
    实体之间的转换代码
-10. 搜索查询才使用 `forSearch(true)`
+10. 搜索查询才使用 `forSearch(true)`，另外强烈建议放在querychain的第一个调用行
 11. 适合“先查 A，顺带带出 B”的场景优先考虑 `@Fetch`，真正需要 join 时先 `.from(...)`，再用方法引用 join
 12. 搜索查询，必须实现 `QO` 并使用 `@ConditionTarget` 体系；`QO.where()` 优先用 `WhereUtil.where(this)`
 13. 非搜索条件忽略优先 predicate 重载，其次 boolean `when` 重载；成组 `or` 条件用 `.nested(...)`，`.or()` 后需要时用
