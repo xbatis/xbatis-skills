@@ -37,14 +37,6 @@ license: Apache-2.0
 2. 再判断是否需要映射或模板能力。
 3. 最后才回退 XML 或原生 SQL。
 
-始终保持以下优先级：
-
-1. DAO 层和内置 Mapper 方法
-2. DAO 内部的 `queryChain()` / `updateChain()` / `insertChain()` / `deleteChain()`
-3. 注解映射、VO 自动映射、`returnType`
-4. SQL 模板、动态 where、动态 query、数据库函数
-5. 少量 XML / 原生 SQL
-
 避免以下默认倾向：
 
 - 不要跳过 DAO 层直接在 Service / Controller 创建 Chain
@@ -67,6 +59,57 @@ license: Apache-2.0
 - 只有接口契约隔离、跨上下文复用、聚合字段拆装等真实需求明确存在时，才保留额外 DTO 到 Model / 实体的转换层
 - Controller 入参超过 2 个，或大概率后续会继续增加参数时，必须使用 QO、DTO、Model 等对象接收，并把对象传递到 Service 层，不要继续堆散参
 - 无特殊要求时，项目必须集成 Lombok；实体、VO、QO、DTO、Model 优先使用 Lombok 减少样板代码，并按需启用 `@FieldNameConstants` 支持字段常量引用
+
+### 实体类约束
+
+默认执行以下规则：
+- 使用 `@Table`
+- 使用 `@TableId`
+- 仅在必要时使用 `@TableField`
+- 无特殊要求时项目必须集成 Lombok，并在实体类上优先补 `@FieldNameConstants`
+- 实体类只承载数据库表字段，保持实体类单一性
+- 实体类注解只能写在实体类上，禁止写在 VO、DTO、QO、Model 等其他类上
+
+仅在以下场景补更多注解：
+
+- 逻辑删除
+- 多租户
+- 乐观锁
+- 动态填充
+- 结果映射
+- 条件映射
+
+推荐的字段规则：
+
+- 创建时间字段优先使用 `@TableField(defaultValue = "{NOW}", update = false)`
+- 修改时间字段优先使用 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
+- 字段已使用 `@LogicDelete` / `@LogicDeleteTime` 等逻辑删除注解时，禁止通过 `@TableField` 配置 `defaultValue` / `updateDefaultValue` 等默认值相关属性
+- 无特殊行为的普通字段，不要为了声明列名而机械补 `@TableField("xxx")`
+- 只有在需要控制默认值、更新行为、类型处理、查询参与、非表字段等特殊语义时才补 `@TableField`
+- 非数据库表字段不要放进实体类；
+
+避免：
+
+- 对每个字段机械地重复写 `@TableField`
+- 明明可由命名规则推导，还重复硬编码列名
+- 在实体类里混入非数据库表字段
+- 在 VO、DTO、QO、Model 等非实体类上使用实体类注解
+
+### QO类约束
+- 查询条件对象优先实现 `cn.xbatis.core.mvc.QO` 并实现 `where()`接口方法
+- 查询条件对象优先使用 `@ConditionTarget`、`@Condition`、`@Conditions`、`@ConditionGroup` 等对象转条件注解
+- QO中凡是非表字段、需要忽略的字段，优先使用 `@Ignore` 或 `@Ignores`
+- 注意：源码接口名是 `QO`，不要写成 `Qo`。
+- 注意：`QO.where()` 中优先使用 `WhereUtil.where(this)` 写法。
+- 多字段查询禁止使用非QO类查询，除非是给dao内部的查询方法
+
+### VO类约束
+- VO类必须配上 `@ResultEntity` 注解 
+- VO中凡是非表字段、需要忽略的字段，优先使用 `@Ignore` 或 `@Ignores`
+- VO 自动映射场景下，VO 类尽量配合 xbatis 的 `@ResultEntity`、`@NestedResultEntity`、`@NestedResultEntityField`、`@ResultCalcField` 等结果映射注解
+- 需要返回枚举名称时优先使用 `@PutEnumValue`
+
+
 
 ## 读取 references
 
@@ -101,21 +144,7 @@ license: Apache-2.0
 
 ## 执行流程
 
-### 1. 先识别任务类型
-
-先将任务归类为以下一种：
-
-- 简单 CRUD
-- 标准列表查询
-- 联表 / VO 查询
-- 搜索表单 / 动态条件
-- 写入 Model / POJO 改造
-- 高复杂度报表 SQL
-- 框架特性接入
-
-### 2. 再选实现方式
-
-#### 简单 CRUD
+### 简单 CRUD
 
 优先使用：
 
@@ -130,7 +159,7 @@ license: Apache-2.0
 - 按 id 查询实体、部分列或单列值时默认写 `QueryChain`
 - 为主键查询、批量 ID 查询、基础新增修改删除编写自定义 XML
 
-#### 标准列表 / 分页 / 条件查询
+### 标准列表 / 分页 / 条件查询
 
 优先使用：
 
@@ -146,17 +175,16 @@ license: Apache-2.0
 
 只有搜索查询、搜索表单、后台筛选页、关键词查询才优先使用 `forSearch(true)`。
 
-#### 联表 / VO 查询
+#### QueryChain联表查询
 
 优先使用：
 
 - DAO 内部的 `queryChain()`
-- 如果是“先查 A，顺带带出 B”的场景，优先考虑 `@Fetch`，不要默认写 join
+- 如果是“先查 A，顺带带出 B”的场景，优先考虑 `@Fetch`，不要默认写 join方式
 - join 查询优先先 `.from(...)` 明确主表
-- `returnType(VO.class)`
-- `select(VO.class)` 或实体/VO 自动列推导
+- 结果指定用`returnType(VO.class)`，如果返回实体类且当前mapper的实体类一样则不用写
+- 推荐 `select(VO.class/实体.class)`自动列推导，如果select实体类且当前mapper的实体类一样则不用写
 - 需要枚举名称时优先使用 `@PutEnumValue`
-- 结果映射注解
 
 避免：
 
@@ -215,41 +243,7 @@ license: Apache-2.0
 
 新项目或用户未指定模式时，优先推荐单 Mapper + DAO。
 
-## 实体规则
 
-默认执行以下规则：
-
-- 使用 `@Table`
-- 使用 `@TableId`
-- 仅在必要时使用 `@TableField`
-- 无特殊要求时项目必须集成 Lombok，并在实体类上优先补 `@FieldNameConstants`
-- 实体类只承载数据库表字段，保持实体类单一性
-- 实体类注解只能写在实体类上，禁止写在 VO、DTO、QO、Model 等其他类上
-
-仅在以下场景补更多注解：
-
-- 逻辑删除
-- 多租户
-- 乐观锁
-- 动态填充
-- 结果映射
-- 条件映射
-
-推荐的字段规则：
-
-- 创建时间字段优先使用 `@TableField(defaultValue = "{NOW}", update = false)`
-- 修改时间字段优先使用 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
-- 字段已使用 `@LogicDelete` / `@LogicDeleteTime` 等逻辑删除注解时，禁止通过 `@TableField` 配置 `defaultValue` / `updateDefaultValue` 等默认值相关属性
-- 无特殊行为的普通字段，不要为了声明列名而机械补 `@TableField("xxx")`
-- 只有在需要控制默认值、更新行为、类型处理、查询参与、非表字段等特殊语义时才补 `@TableField`
-- 非数据库表字段不要放进实体类；这类字段应放到 VO、QO、Model，并按需使用 `@Ignore` 或 `@Ignores`
-
-避免：
-
-- 对每个字段机械地重复写 `@TableField`
-- 明明可由命名规则推导，还重复硬编码列名
-- 在实体类里混入非数据库表字段
-- 在 VO、DTO、QO、Model 等非实体类上使用实体类注解
 
 ## Mapper 规则
 
@@ -378,8 +372,7 @@ public enum Status implements EnumSupport<Integer> {
 - 手工一个一个 `select` 字段，本可直接 `select(VO.class)` 却堆大量列
 - 把可复用查询条件拆散成 Service 层的一长串 if
 
-注意：源码接口名是 `QO`，不要写成 `Qo`。
-注意：`QO.where()` 中优先使用 `WhereUtil.where(this)` 写法。
+
 
 无法使用 `forSearch(true)`，但需要根据值忽略条件时：
 
@@ -426,8 +419,7 @@ public enum Status implements EnumSupport<Integer> {
 - 展示型、联表型、聚合型结果必须优先返回 VO
 - DAO 内部和纯持久化读写方法可以返回实体，但不要把实体直接穿透到接口响应
 - 优先让 xbatis 自动 select 所需列
-- VO 自动映射场景下，VO 类尽量配合 xbatis 的 `@ResultEntity`、`@NestedResultEntity`、`@NestedResultEntityField`、`@ResultCalcField` 等结果映射注解
-- 需要返回枚举名称时优先使用 `@PutEnumValue`
+
 - VO 中凡是不是数据库操作字段、需要忽略的字段，优先使用 `@Ignore` 或 `@Ignores`
 - 非实体类不要使用实体类注解
 
@@ -644,9 +636,7 @@ public enum Status implements EnumSupport<Integer> {
 5. 使用 `@OnInsert`
 6. 使用 `@OnUpdate`
 
-## 结论
-
-始终记住这些规则：
+## 始终记住这些规则
 
 1. 开启 xbatis 时，第一件事就是从 GitHub / Gitee 下载 xbatis 源码到本地目录；本地目录有就不要执行下载
 2. 后续生成、改写、审查时，优先从本地源码目录分析真实用法
