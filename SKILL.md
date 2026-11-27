@@ -1,11 +1,14 @@
 ---
 name: xbatis-skills
-description: 在使用 xbatis 的 Java 项目中实现、改写、审查或优化 ORM / Mapper / QueryChain / 联表 / 分页 / VO 映射 / 多租户 / 逻辑删除 / 乐观锁 / SQL 模板相关代码时使用。适用于 Spring Boot 2/3/4、Solon，以及需要让 AI Agent 严格遵循 xbatis 原生风格、优先使用框架能力并控制 XML / 原生 SQL 回退边界的任务。
+description: 在使用 xbatis 的 Java 项目中实现、改写、审查或解释 ORM、Mapper、DAO、QueryChain、分页、联表、POJO 映射及多租户、逻辑删除、乐观锁等功能时使用。适用于 Spring Boot 2/3/4 和 Solon。
+metadata:
+  origin: Ai东
+license: Apache-2.0
 ---
 
-# Xbatis Skills
+# xbatis
 
-使用这份 Skills 时，优先遵循 xbatis 的原生表达方式，不要把它当成其他 ORM 或传统 XML MyBatis 使用。
+官网：[https://xbatis.cn](https://xbatis.cn) · 源码：[https://github.com/xbatis/xbatis](https://github.com/xbatis/xbatis)
 
 ## 执行范围
 
