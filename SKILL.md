@@ -7,6 +7,7 @@ license: Apache-2.0
 ---
 
 # xbatis
+
 一款基于mybatis实现的ORM框架
 官网：[https://xbatis.cn](https://xbatis.cn) · 源码：[https://github.com/xbatis/xbatis](https://github.com/xbatis/xbatis)
 
@@ -50,22 +51,27 @@ license: Apache-2.0
 默认按以下项目级约束生成和审查代码：
 
 - 开发环境必须开启 xbatis POJO 安全检查，用于启动时检查 VO、Model、条件对象、排序对象的映射和注解缺口
-- Spring / Spring Boot 项目优先按当前 starter 支持的 `@XbatisPojoCheckScan` 接入；旧 README / starter 文档记录的包名是 `org.mybatis.spring.boot.autoconfigure.XbatisPojoCheckScan`，但生成前必须从当前项目依赖或本地 starter 源码确认真实包名
-- Solon 项目优先在 `solon.yml` 的 `mybatis.<数据源 bean 名称>.pojoCheck` 下配置 `basePackages`、`modelPackages`、`resultEntityPackages`、`conditionTargetPackages`、`orderByTargetPackages`
-- POJO 安全检查扫描范围二选一：要么使用 `basePackages` 覆盖项目相关包，要么使用 `modelPackages` / `resultEntityPackages` / `conditionTargetPackages` / `orderByTargetPackages` 等细分包路径；不要同时生成两种方案
+- Spring / Spring Boot 项目优先按当前 starter 支持的 `@XbatisPojoCheckScan` 接入；旧 README / starter 文档记录的包名是
+  `org.mybatis.spring.boot.autoconfigure.XbatisPojoCheckScan`，但生成前必须从当前项目依赖或本地 starter 源码确认真实包名
+- Solon 项目优先在 `solon.yml` 的 `mybatis.<数据源 bean 名称>.pojoCheck` 下配置 `basePackages`、`modelPackages`、
+  `resultEntityPackages`、`conditionTargetPackages`、`orderByTargetPackages`
+- POJO 安全检查扫描范围二选一：要么使用 `basePackages` 覆盖项目相关包，要么使用 `modelPackages` / `resultEntityPackages` /
+  `conditionTargetPackages` / `orderByTargetPackages` 等细分包路径；不要同时生成两种方案
 - 测试环境和生产环境不要求默认开启安全检查；除非项目明确要求，不要为 test/prod 生成安全检查配置
 - 生成新项目骨架、接入 xbatis、生成 VO / Model / QO / OrderBy 对象时，必须同步补安全检查扫描范围
-- 新增或修改用于新增、更新的 POJO 时，优先判断能否使用 xbatis Model 直接参与 `save(Model)` / `update(Model)`，减少 DTO / Model / 实体之间的手工转换代码
+- 新增或修改用于新增、更新的 POJO 时，优先判断能否使用 xbatis Model 直接参与 `save(Model)` / `update(Model)`，减少 DTO /
+  Model / 实体之间的手工转换代码
 - 只有接口契约隔离、跨上下文复用、聚合字段拆装等真实需求明确存在时，才保留额外 DTO 到 Model / 实体的转换层
-- Controller 入参超过 2 个，或大概率后续会继续增加参数时，必须使用 QO、DTO、Model 等对象接收，并把对象传递到 Service 层，不要继续堆散参
-- 无特殊要求时，项目必须集成 Lombok；实体、VO、QO、DTO、Model 优先使用 Lombok 减少样板代码，并按需启用 `@FieldNameConstants` 支持字段常量引用
+- Controller 入参超过 2 个，或大概率后续会继续增加参数时，必须使用 QO、DTO、Model 等对象接收，并把对象传递到 Service
+  层，不要继续堆散参
+- 无特殊要求时，项目必须集成 Lombok；实体、VO、QO、DTO、Model 优先使用 Lombok 减少样板代码，并按需启用 `@FieldNameConstants`
+  支持字段常量引用
 
 ### 实体类约束
 
 默认执行以下规则：
-- 使用 `@Table`
-- 使用 `@TableId`
-- 仅在必要时使用 `@TableField`
+
+- 仅在必要时加上`@TableField`注解
 - 无特殊要求时项目必须集成 Lombok，并在实体类上优先补 `@FieldNameConstants`
 - 实体类只承载数据库表字段，保持实体类单一性
 - 实体类注解只能写在实体类上，禁止写在 VO、DTO、QO、Model 等其他类上
@@ -75,15 +81,14 @@ license: Apache-2.0
 - 逻辑删除
 - 多租户
 - 乐观锁
-- 动态填充
-- 结果映射
-- 条件映射
 
 推荐的字段规则：
 
 - 创建时间字段优先使用 `@TableField(defaultValue = "{NOW}", update = false)`
-- 修改时间字段优先使用 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
-- 字段已使用 `@LogicDelete` / `@LogicDeleteTime` 等逻辑删除注解时，禁止通过 `@TableField` 配置 `defaultValue` / `updateDefaultValue` 等默认值相关属性
+- 修改时间字段优先使用
+  `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
+- 字段已使用 `@LogicDelete` / `@LogicDeleteTime` 等逻辑删除注解时，禁止通过 `@TableField` 配置 `defaultValue` /
+  `updateDefaultValue` 等默认值相关属性
 - 无特殊行为的普通字段，不要为了声明列名而机械补 `@TableField("xxx")`
 - 只有在需要控制默认值、更新行为、类型处理、查询参与、非表字段等特殊语义时才补 `@TableField`
 - 非数据库表字段不要放进实体类；
@@ -96,6 +101,7 @@ license: Apache-2.0
 - 在 VO、DTO、QO、Model 等非实体类上使用实体类注解
 
 ### QO类约束
+
 - 查询条件对象优先实现 `cn.xbatis.core.mvc.QO` 并实现 `where()`接口方法
 - 查询条件对象优先使用 `@ConditionTarget`、`@Condition`、`@Conditions`、`@ConditionGroup` 等对象转条件注解
 - QO中凡是非表字段、需要忽略的字段，优先使用 `@Ignore` 或 `@Ignores`
@@ -104,12 +110,12 @@ license: Apache-2.0
 - 多字段查询禁止使用非QO类查询，除非是给dao内部的查询方法
 
 ### VO类约束
-- VO类必须配上 `@ResultEntity` 注解 
+
+- VO类必须配上 `@ResultEntity` 注解
 - VO中凡是非表字段、需要忽略的字段，优先使用 `@Ignore` 或 `@Ignores`
-- VO 自动映射场景下，VO 类尽量配合 xbatis 的 `@ResultEntity`、`@NestedResultEntity`、`@NestedResultEntityField`、`@ResultCalcField` 等结果映射注解
+- VO 自动映射场景下，VO 类尽量配合 xbatis 的 `@ResultEntity`、`@NestedResultEntity`、`@NestedResultEntityField`、
+  `@ResultCalcField` 等结果映射注解
 - 需要返回枚举名称时优先使用 `@PutEnumValue`
-
-
 
 ## 读取 references
 
@@ -159,23 +165,7 @@ license: Apache-2.0
 - 按 id 查询实体、部分列或单列值时默认写 `QueryChain`
 - 为主键查询、批量 ID 查询、基础新增修改删除编写自定义 XML
 
-### 标准列表 / 分页 / 条件查询
-
-优先使用：
-
-- DAO 内部的 `queryChain()`
-- `paging(Pager)`
-- 条件对象转 where
-
-避免：
-
-- 在业务层手工拼接 where
-- 手工维护 count + limit 两套 SQL
-- 在非搜索查询里机械套用 `forSearch(true)`
-
-只有搜索查询、搜索表单、后台筛选页、关键词查询才优先使用 `forSearch(true)`。
-
-#### QueryChain联表查询
+### QueryChain查询规则
 
 优先使用：
 
@@ -193,24 +183,7 @@ license: Apache-2.0
 - 本可用 `@Fetch` 的场景机械改成 join
 - 手工一个一个 `select` 字段，本可直接 `select(VO.class)` 却堆大量列
 
-#### 更新 / 插入 / 删除链
-
-优先使用：
-
-- DAO 内部的 `updateChain()`
-- DAO 内部的 `insertChain()`
-- DAO 内部的 `deleteChain()`
-- Model 直接参与 `save(Model)` / `update(Model)`
-
-避免：
-
-- 在 Service / Controller 中直接创建 `UpdateChain.of(...)`
-- 在 Service / Controller 中直接创建 `InsertChain.of(...)`
-- 在 Service / Controller 中直接创建 `DeleteChain.of(...)`
-- 把 `DeleteChain` 当成逻辑删除入口
-- 本可使用 xbatis Model 直接写入时，仍新增 DTO / 实体之间的手工转换层
-
-#### 复杂 SQL
+### 复杂 SQL约束
 
 优先使用：
 
@@ -243,8 +216,6 @@ license: Apache-2.0
 
 新项目或用户未指定模式时，优先推荐单 Mapper + DAO。
 
-
-
 ## Mapper 规则
 
 默认执行以下规则：
@@ -260,7 +231,8 @@ license: Apache-2.0
 - 多 Mapper 模式下项目 BaseDao 继承 `DaoImpl<T, ID>`
 - DAO 层必须创建业务 DAO 接口，接口继承 `cn.xbatis.core.mvc.Dao<T, ID>`
 - 业务 DAO 实现类继承项目 BaseDao，并实现对应业务 DAO 接口
-- 项目 BaseDao 的 `setMapper(...)` 方法必须加上当前容器框架的自动注入注解；Spring 跟随 `@Autowired` / `@Resource` 等项目既有规范，Solon 跟随 `@Inject` / `@Db` 等项目既有规范
+- 项目 BaseDao 的 `setMapper(...)` 方法必须加上当前容器框架的自动注入注解；Spring 跟随 `@Autowired` / `@Resource`
+  等项目既有规范，Solon 跟随 `@Inject` / `@Db` 等项目既有规范
 - 业务 DAO 实现类只继承项目 BaseDao，不需要也不应重复重写 `setMapper(...)`
 - 业务 DAO 接口不要继承 `cn.xbatis.core.mvc.IDao<T, ID>`；源码注释说明 `IDao` 是旧接口且不建议开发者使用
 - 已有项目按既有单 Mapper / 多 Mapper 模式实现
@@ -283,10 +255,13 @@ license: Apache-2.0
 - 项目 BaseDao 统一定义带容器自动注入注解的 `setMapper(...)`，内部调用父类 `setMapper(mapper)` 完成绑定
 - 业务 DAO 接口统一继承 `Dao<T, ID>`；业务 DAO 实现类继承项目 BaseDao 并实现该接口
 - 业务 DAO 实现类只声明实体泛型并继承项目 BaseDao，不重复写 Mapper 字段、构造器注入或 `setMapper(...)`
-- 基础按 id、save、update 等方法强烈建议保持和框架 Dao / BaseDao / 内置 Mapper 的真实方法名和签名一致；不要改造成 `findById`、`create`、`modify` 这类二次命名
-- 业务 DAO 只保留有业务语义、组合查询、事务边界或复用价值的方法；简单 CRUD、按 id 查询、count、exists、save、update、delete 等基础能力直接使用 BaseDao / 内置 Mapper，或在接口契约中按框架真实签名继承
+- 基础按 id、save、update 等方法强烈建议保持和框架 Dao / BaseDao / 内置 Mapper 的真实方法名和签名一致；不要改造成
+  `findById`、`create`、`modify` 这类二次命名
+- 业务 DAO 只保留有业务语义、组合查询、事务边界或复用价值的方法；简单 CRUD、按 id 查询、count、exists、save、update、delete
+  等基础能力直接使用 BaseDao / 内置 Mapper，或在接口契约中按框架真实签名继承
 - 有 DAO 层时，强烈推荐把数据库访问与事务边界一起收敛到 DAO 方法
-- Spring 项目在单 Mapper 模式下配置 `@MapperScan` 扫描统一 `XbatisMapper` 所在包；如果项目已使用 `markerInterface = BasicMapper.class`，延续现有配置
+- Spring 项目在单 Mapper 模式下配置 `@MapperScan` 扫描统一 `XbatisMapper` 所在包；如果项目已使用
+  `markerInterface = BasicMapper.class`，延续现有配置
 - 单 Mapper 模式下不要主动调用 `XbatisGlobalConfig.setSingleMapperClass(...)`
 - 不要在同一模块里混入两套 Mapper 风格
 
@@ -294,44 +269,13 @@ license: Apache-2.0
 
 默认执行以下规则：
 
-- 新增、生成或改写持久化枚举时，枚举类必须完整遵循 xbatis 枚举契约，并实现/继承（Java 代码使用 `implements`）`cn.xbatis.core.mybatis.typeHandler.EnumSupport<T>`
+- 新增、生成或改写持久化枚举时，枚举类必须完整遵循 xbatis 枚举契约，并实现/继承（Java 代码使用 `implements`）
+  `cn.xbatis.core.mybatis.typeHandler.EnumSupport<T>`
 - 枚举必须提供稳定的 `code` 值并实现 `getCode()`；字段类型 `T` 按数据库实际存储类型选择，例如 `String`、`Integer`、`Long`
 - 枚举必须提供 `public static Xxx of(T code)` 方法；遍历枚举按 `code` 匹配，找不到时返回 `null`
 - 示例形态：`public enum Status implements EnumSupport<Integer> { ... }`
 - 不要默认依赖 `Enum.name()`、`ordinal()` 或手写 TypeHandler 作为 xbatis 枚举持久化方案
 - 需要在 VO 中返回枚举名称或展示值时，优先配合 xbatis 的 `@PutEnumValue`
-
-示例：
-
-```java
-public enum Status implements EnumSupport<Integer> {
-
-    ENABLED(1),
-    DISABLED(0);
-
-    private final Integer code;
-
-    Status(Integer code) {
-        this.code = code;
-    }
-
-    @Override
-    public Integer getCode() {
-        return code;
-    }
-
-    public static Status of(Integer code) {
-        for (Status item : values()) {
-            if (java.util.Objects.equals(item.getCode(), code)) {
-                return item;
-            }
-        }
-        return null;
-    }
-}
-```
-
-新增、修改或生成前必须从本地 xbatis 源码确认真实包名；当前源码中 `EnumSupport` 位于 `cn.xbatis.core.mybatis.typeHandler.EnumSupport`。
 
 ## QueryChain 规则
 
@@ -362,7 +306,7 @@ public enum Status implements EnumSupport<Integer> {
 
 避免：
 
-- 依赖旧式不推荐 join 写法
+- 使用旧式不推荐 join 写法
 - 在适合 `@Fetch` 的场景机械使用 join
 - 把搜索场景的空值忽略逻辑散落在 Service 层
 - 在详情查询、唯一性校验、内部业务规则查询中默认套用 `forSearch(true)`
@@ -371,8 +315,6 @@ public enum Status implements EnumSupport<Integer> {
 - 需要括号包裹 `or` 条件时，没有使用 `.nested(chain -> ...)`
 - 手工一个一个 `select` 字段，本可直接 `select(VO.class)` 却堆大量列
 - 把可复用查询条件拆散成 Service 层的一长串 if
-
-
 
 无法使用 `forSearch(true)`，但需要根据值忽略条件时：
 
@@ -395,7 +337,7 @@ public enum Status implements EnumSupport<Integer> {
 - 新增或修改用于新增、更新的 POJO 类时，优先建成或改成 xbatis Model，让 Model 直接承载可写字段
 - 能通过 Model 直接写入时，不要先把 Model / DTO 手工 copy 成实体类再调用 `save` / `update`
 - Model 中凡是不是数据库操作字段、需要忽略的字段，优先使用 `@Ignore` 或 `@Ignores`
-- 单条数据如果是“先查询出来，再改部分字段”的场景，强烈建议使用 xbatis 的 `partialUpdate(...)` 精准修改
+- 特别注意：单条数据如果是“先查询出来，再改部分字段”的场景，强烈建议使用 xbatis 的 `partialUpdate(...)` 精准修改
 - 更新时缩小字段范围，只更新本次业务允许变化的字段
 
 避免：
@@ -461,7 +403,8 @@ public enum Status implements EnumSupport<Integer> {
 
 优先复用框架逻辑删除能力。
 
-逻辑删除字段已使用 `@LogicDelete` / `@LogicDeleteTime` 等注解时，禁止通过 `@TableField` 的 `defaultValue` / `updateDefaultValue` 配置删除默认值或删除时间。
+逻辑删除字段已使用 `@LogicDelete` / `@LogicDeleteTime` 等注解时，禁止通过 `@TableField` 的 `defaultValue` /
+`updateDefaultValue` 配置删除默认值或删除时间。
 
 避免：
 
@@ -485,40 +428,6 @@ public enum Status implements EnumSupport<Integer> {
 避免：
 
 - 手工给每个 update 写版本判断逻辑
-
-### 动态值 / 默认值
-
-优先使用全局动态值、`@OnInsert`、`@OnUpdate`。
-
-避免：
-
-- 在 Controller / Service 层重复填充创建时间、修改时间、操作人
-
-实体审计字段建议：
-
-- 创建时间字段优先使用 `@TableField(defaultValue = "{NOW}", update = false)`
-- 修改时间字段优先使用 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
-- 逻辑删除字段已有逻辑删除注解时，禁止补 `@TableField` 默认值配置
-
-### 对象转条件 / 对象转排序
-
-优先将搜索对象、筛选对象、排序对象交给框架对象转换能力处理。
-
-查询对象规则：
-
-- 查询对象优先实现 `cn.xbatis.core.mvc.QO`
-- `QO.where()` 负责集中构建 `Where`
-- 条件对象优先声明 `@ConditionTarget`，并按需使用 `@Condition`、`@Conditions`、`@ConditionGroup`
-- `QO.where()` 中优先使用 `WhereUtil.where(this)`
-- DAO 方法优先接收查询对象并使用 `queryChain(qo.where())`
-- 多字段排序优先使用对象转排序
-- 使用 `Methods` 风格时，优先静态导入所需方法，并保持 `eq(gt(...))` 这类嵌套表达
-
-避免：
-
-- 为动态筛选写一长串 `if`
-- 在 Service 层手工拼接查询条件
-- 在 Service / Controller 手工拼接多字段 `order by`
 
 ## 禁止事项
 
@@ -547,7 +456,8 @@ public enum Status implements EnumSupport<Integer> {
 21. 在无特殊语义的普通字段上机械补 `@TableField("列名")`
 22. 创建时间、修改时间没有优先复用 `@TableField` 的动态默认值能力
 23. QO 已适合对象转条件，却不使用 `@ConditionTarget` 体系和 `WhereUtil.where(this)`
-24. DAO 注入仍以构造方法传 Mapper 为主，或把 `setMapper(...)` 重复写在每个业务 DAO 子类里，而不是在项目 BaseDao 上统一加容器自动注入注解
+24. DAO 注入仍以构造方法传 Mapper 为主，或把 `setMapper(...)` 重复写在每个业务 DAO 子类里，而不是在项目 BaseDao
+    上统一加容器自动注入注解
 25. xbatis 注解里有字段依赖时仍写字符串字面量，不优先使用 `SysUser.Fields.id`
 26. `.as(...)` 明明可以使用字段 / getter 引用，却默认回退字符串别名
 27. VO、QO、Model 中存在非数据库操作字段，却没有使用 `@Ignore` 或 `@Ignores`
@@ -583,10 +493,12 @@ public enum Status implements EnumSupport<Integer> {
 20. 单 Mapper 模式下是否定义统一 `XbatisMapper` 并配置 `@MapperScan`
 21. 需要枚举名称时是否优先使用 `@PutEnumValue`
 22. 实体普通字段是否避免了机械 `@TableField("列名")`
-23. 创建时间、修改时间是否优先使用 `@TableField(defaultValue = "{NOW}", update = false)` 和 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
+23. 创建时间、修改时间是否优先使用 `@TableField(defaultValue = "{NOW}", update = false)` 和
+    `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
 24. 逻辑删除字段已有 `@LogicDelete` / `@LogicDeleteTime` 等注解时，是否禁止了 `@TableField` 默认值配置
 25. QO 是否优先配合 `@ConditionTarget` 体系，并在 `where()` 中使用 `WhereUtil.where(this)`
-26. 项目 BaseDao 的 `setMapper(...)` 是否带 Spring、Solon 等容器自动注入注解，业务 DAO 子类是否避免重复重写 `setMapper(...)`
+26. 项目 BaseDao 的 `setMapper(...)` 是否带 Spring、Solon 等容器自动注入注解，业务 DAO 子类是否避免重复重写
+    `setMapper(...)`
 27. 实体、QO、VO 等涉及字段引用的 xbatis 注解是否优先使用 Lombok `@FieldNameConstants` 生成的 `Fields`
 28. `.as(...)` 是否优先使用 getter / 字段引用形式，例如 `.select(SysUser::getId, c -> c.as(SysUser::getId))`
 29. VO、QO、Model 中需要忽略的非数据库操作字段是否使用了 `@Ignore` 或 `@Ignores`
@@ -597,41 +509,14 @@ public enum Status implements EnumSupport<Integer> {
 34. 开发环境是否已经开启 xbatis POJO 安全检查，并覆盖 VO、Model、QO、排序对象所在包；test/prod 是否避免默认开启
 35. 业务 DAO 是否避免编写与 BaseDao / 内置 Mapper 重复的简单方法
 
-## 任务映射
-
-### 新增后台列表页
-
-执行：
-
-1. 定义查询条件对象
-2. 查询条件对象实现 `cn.xbatis.core.mvc.QO`
-3. 查询条件对象优先配 `@ConditionTarget`、`@Condition`、`@Conditions`、`@ConditionGroup`
-4. 需要忽略的非数据库操作字段使用 `@Ignore` 或 `@Ignores`
-5. 在 `where()` 中优先使用 `WhereUtil.where(this)`
-6. 在 DAO 内使用 `queryChain(qo.where())`
-7. 仅搜索查询启用 `forSearch(true)`，其他场景使用对象转条件、predicate / boolean `when` 或显式条件
-8. 使用 `paging(Pager)`
-9. 返回后台列表 VO；字段基本等同实体时可考虑让 VO 继承实体
-
-### 新增联表详情页
-
-执行：
-
-1. 在 DAO 内使用 `queryChain()`
-2. 先用 `.from(...)` 明确主表，再定义 join
-3. join 优先使用方法引用写法，例如 `leftJoin(SysUser::getRoleId, SysRole::getId)`
-4. 使用 `returnType(VO.class)`；需要时优先 `select(VO.class)`
-5. VO 优先配合 `@ResultEntity` 等结果映射注解；必要时补 `@PutEnumValue`
-6. VO 中需要忽略的非数据库操作字段使用 `@Ignore` 或 `@Ignores`
-7. 字段别名优先使用 getter / 字段引用形式；只有特殊场景才使用字符串别名
-
-### 实现审计字段填充
+### 字段填充约束
 
 执行：
 
 1. 配置动态值
 2. 创建时间字段优先使用 `@TableField(defaultValue = "{NOW}", update = false)`
-3. 修改时间字段优先使用 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
+3. 修改时间字段优先使用
+   `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
 4. 逻辑删除字段已有逻辑删除注解时，禁止补 `@TableField` 默认值配置
 5. 使用 `@OnInsert`
 6. 使用 `@OnUpdate`
@@ -646,28 +531,38 @@ public enum Status implements EnumSupport<Integer> {
 6. 大多数业务查询使用 `QO` 对象转条件并在 DAO 内执行
 7. 按 id 查询实体或部分列用 `getById`，按 id 查单列值用 `getValueById`
 8. 更新、插入、删除链在 DAO 内使用框架方法创建
-9. 新增或修改写入 POJO 时优先考虑 xbatis Model 修改方式，修改操作用 Model 类收敛入参并缩小更新字段范围，减少 DTO / Model / 实体之间的转换代码
+9. 新增或修改写入 POJO 时优先考虑 xbatis Model 修改方式，修改操作用 Model 类收敛入参并缩小更新字段范围，减少 DTO / Model /
+   实体之间的转换代码
 10. 搜索查询才使用 `forSearch(true)`
 11. 适合“先查 A，顺带带出 B”的场景优先考虑 `@Fetch`，真正需要 join 时先 `.from(...)`，再用方法引用 join
 12. 条件对象优先实现 `QO` 并使用 `@ConditionTarget` 体系；`QO.where()` 优先用 `WhereUtil.where(this)`
-13. 非搜索条件忽略优先 predicate 重载，其次 boolean `when` 重载；成组 `or` 条件用 `.nested(...)`，`.or()` 后需要时用 `.and()` 切回；使用 `Methods` 风格时优先静态导入
-14. 接口返回优先 VO；后台管理 VO 可考虑继承实体，联表和展示结果优先 `select(VO.class)` / `returnType(VO.class)` 自动映射，VO 优先配合 `@ResultEntity` 等结果映射注解
+13. 非搜索条件忽略优先 predicate 重载，其次 boolean `when` 重载；成组 `or` 条件用 `.nested(...)`，`.or()` 后需要时用
+    `.and()` 切回；使用 `Methods` 风格时优先静态导入
+14. 接口返回优先 VO；后台管理 VO 可考虑继承实体，联表和展示结果优先 `select(VO.class)` / `returnType(VO.class)` 自动映射，VO
+    优先配合 `@ResultEntity` 等结果映射注解
 15. 需要枚举名称时优先使用 `@PutEnumValue`
-16. 实体普通字段默认不写 `@TableField`；创建时间优先 `@TableField(defaultValue = "{NOW}", update = false)`，修改时间优先 `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`；逻辑删除字段已有逻辑删除注解时，禁止补 `@TableField` 默认值配置
-17. 实体类只承载数据库表字段，禁止混入非数据库表字段；VO、QO、Model 中需要忽略的非数据库操作字段优先使用 `@Ignore` 或 `@Ignores`
+16. 实体普通字段默认不写 `@TableField`；创建时间优先 `@TableField(defaultValue = "{NOW}", update = false)`，修改时间优先
+    `@TableField(defaultValue = "{NOW}", updateDefaultValue = "{NOW}", updateDefaultValueFillAlways = true)`
+    ；逻辑删除字段已有逻辑删除注解时，禁止补 `@TableField` 默认值配置
+17. 实体类只承载数据库表字段，禁止混入非数据库表字段；VO、QO、Model 中需要忽略的非数据库操作字段优先使用 `@Ignore` 或
+    `@Ignores`
 18. 无特殊要求时项目必须集成 Lombok，并优先使用 `@FieldNameConstants` 和 `SysUser.Fields.id` 这类字段引用
-19. `.as(...)` 优先使用 getter / 字段引用形式，例如 `.select(SysUser::getId, c -> c.as(SysUser::getId))`；只有特殊情况才使用 `.as("id")`
-20. DAO 注入收敛在项目 BaseDao 的 `setMapper(...)` 上，并补 Spring、Solon 等容器自动注入注解；BaseDao 子类不重复重写 `setMapper(...)`，不默认走构造方法传 Mapper
+19. `.as(...)` 优先使用 getter / 字段引用形式，例如 `.select(SysUser::getId, c -> c.as(SysUser::getId))`；只有特殊情况才使用
+    `.as("id")`
+20. DAO 注入收敛在项目 BaseDao 的 `setMapper(...)` 上，并补 Spring、Solon 等容器自动注入注解；BaseDao 子类不重复重写
+    `setMapper(...)`，不默认走构造方法传 Mapper
 21. 单条数据如果是先查后改部分字段，强烈建议使用 `partialUpdate(...)` 精准修改
 22. `UpdateChain`、`InsertChain`、`DeleteChain` 最终统一通过 `execute()` 执行
 23. SQL 模板优先通过 `Methods.tpl`、`Methods.fTpl`、`Methods.cTpl` 创建
 24. 逻辑删除、多租户、乐观锁、动态值优先框架能力
 25. XML 是补充手段，不是默认起点
-26. 单 Mapper 模式优先统一 `XbatisMapper extends BasicMapper` 并配置 `@MapperScan`，不主动调用 `XbatisGlobalConfig.setSingleMapperClass(...)`
+26. 单 Mapper 模式优先统一 `XbatisMapper extends BasicMapper` 并配置 `@MapperScan`，不主动调用
+    `XbatisGlobalConfig.setSingleMapperClass(...)`
 27. 有 DAO 层时，事务强烈推荐在 DAO 方法上开启
 28. 实体类注解只能写在实体类上
 29. 先识别项目现有 xbatis 风格，再落具体代码
-30. 开发环境必须开启 xbatis POJO 安全检查，扫描范围在 `basePackages` 和细分包路径中二选一；测试和生产环境不要求默认开启；不知道真实注解包名或配置项时，先查当前 starter 依赖和本地源码
+30. 开发环境必须开启 xbatis POJO 安全检查，扫描范围在 `basePackages` 和细分包路径中二选一；测试和生产环境不要求默认开启；不知道真实注解包名或配置项时，先查当前
+    starter 依赖和本地源码
 31. 业务 DAO 不建议写与 BaseDao / 内置 Mapper 重复的简单方法；只新增有明确业务语义或复用价值的方法
 
 如果生成结果不满足这些规则，继续收敛实现方案。
