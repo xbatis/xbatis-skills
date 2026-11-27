@@ -1,5 +1,5 @@
 interface:
-  display_name: "Xbatis AI Skill"
+  display_name: "Xbatis Skill"
   short_description: "面向 Agent 的专业 xbatis 编码与审查规则"
   default_prompt: "Use $xbatis-skills to implement or review xbatis Java persistence code, preferring DAO and native xbatis patterns, verifying uncertain APIs from the project or local xbatis source, and reading only the relevant reference file for the task."
 
