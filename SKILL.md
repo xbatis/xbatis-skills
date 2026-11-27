@@ -524,6 +524,15 @@ license: Apache-2.0
 5. 使用 `@OnInsert`
 6. 使用 `@OnUpdate`
 
+### QueryChain约束规则
+1. 能用Fetch,则不用leftJoin
+2. select和returnType输入参数一样时，不需要调用select方法
+3. forSearch方法必须放到第一行
+
+### or and 方法约束规则
+1. `or` 条件用 `.nested(...)`，`.or()` 后需要时用`.and()` 切回；使用 `Methods` 风格时优先静态导入
+2. `or` `and`方法是包含括号的；如果需要括号则应该使用`orNested` 或 `andNested` 方法代替;另外也要特别注意逻辑
+
 ## 始终记住这些规则
 
 1. 开启 xbatis 时，第一件事就是从 GitHub / Gitee 下载 xbatis 源码到本地目录；本地目录有就不要执行下载
@@ -536,7 +545,7 @@ license: Apache-2.0
 8. 更新、插入、删除链在 DAO 内使用框架方法创建
 9. 新增或修改写入 POJO 时优先考虑 xbatis Model 修改方式，修改操作用 Model 类收敛入参并缩小更新字段范围，减少 DTO / Model /
    实体之间的转换代码
-10. 搜索查询才使用 `forSearch(true)`，另外强烈建议放在querychain的第一个调用行
+10. 搜索查询才使用 `forSearch(true)`，另外强烈建议放在queryChain的第一个调用行
 11. 适合“先查 A，顺带带出 B”的场景优先考虑 `@Fetch`，真正需要 join 时先 `.from(...)`，再用方法引用 join
 12. 搜索查询，必须实现 `QO` 并使用 `@ConditionTarget` 体系；`QO.where()` 优先用 `WhereUtil.where(this)`
 13. 非搜索条件忽略优先 predicate 重载，其次 boolean `when` 重载；成组 `or` 条件用 `.nested(...)`，`.or()` 后需要时用
