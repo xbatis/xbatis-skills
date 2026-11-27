@@ -7,7 +7,7 @@ license: Apache-2.0
 ---
 
 # xbatis
-
+一款基于mybatis实现的ORM框架
 官网：[https://xbatis.cn](https://xbatis.cn) · 源码：[https://github.com/xbatis/xbatis](https://github.com/xbatis/xbatis)
 
 ## 执行范围
