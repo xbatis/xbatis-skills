@@ -1,4 +1,4 @@
-# Xbatis AI Skill
+# Xbatis Skill
 
 面向 AI Agent 的 xbatis 编码与审查规则集，用于在 Java 项目中实现、改写、审查或优化 xbatis 相关持久化代码。
 
