@@ -102,7 +102,7 @@ license: Apache-2.0
 
 ### QO类约束
 
-- 查询条件对象优先实现 `cn.xbatis.core.mvc.QO` 并实现 `where()`接口方法
+- 搜索查询时，必须使用QO，实现 `cn.xbatis.core.mvc.QO` 并实现 `where()`接口方法
 - 查询条件对象优先使用 `@ConditionTarget`、`@Condition`、`@Conditions`、`@ConditionGroup` 等对象转条件注解
 - QO中凡是非表字段、需要忽略的字段，优先使用 `@Ignore` 或 `@Ignores`
 - 注意：源码接口名是 `QO`，不要写成 `Qo`。
@@ -116,6 +116,9 @@ license: Apache-2.0
 - VO 自动映射场景下，VO 类尽量配合 xbatis 的 `@ResultEntity`、`@NestedResultEntity`、`@NestedResultEntityField`、
   `@ResultCalcField` 等结果映射注解
 - 需要返回枚举名称时优先使用 `@PutEnumValue`
+
+### 注解使用约束
+- Model/VO/QO类中对于实体类字段的引用，必须配合Lombok的 `@FieldNameConstants`；例如 `SysUser.Fields.id`
 
 ## 读取 references
 
@@ -535,7 +538,7 @@ license: Apache-2.0
    实体之间的转换代码
 10. 搜索查询才使用 `forSearch(true)`
 11. 适合“先查 A，顺带带出 B”的场景优先考虑 `@Fetch`，真正需要 join 时先 `.from(...)`，再用方法引用 join
-12. 条件对象优先实现 `QO` 并使用 `@ConditionTarget` 体系；`QO.where()` 优先用 `WhereUtil.where(this)`
+12. 搜索查询，必须实现 `QO` 并使用 `@ConditionTarget` 体系；`QO.where()` 优先用 `WhereUtil.where(this)`
 13. 非搜索条件忽略优先 predicate 重载，其次 boolean `when` 重载；成组 `or` 条件用 `.nested(...)`，`.or()` 后需要时用
     `.and()` 切回；使用 `Methods` 风格时优先静态导入
 14. 接口返回优先 VO；后台管理 VO 可考虑继承实体，联表和展示结果优先 `select(VO.class)` / `returnType(VO.class)` 自动映射，VO
